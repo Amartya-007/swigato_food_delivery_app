@@ -1,0 +1,66 @@
+.venv/
+
+# OS-generated files
+# Ignore macOS .DS_Store files
+.DS_Store
+# Ignore Windows thumbnail cache files
+Thumbs.db
+# Ignore Windows folder customization files
+Desktop.ini
+
+# Python bytecode files
+__pycache__/
+*.py[cod]
+# Distribution / packaging
+.Python
+dist/
+*.egg-info/
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+# Unit test / coverage reports
+.coverage
+*.cover
+# Translations
+*.mo
+# Django stuff:
+*.log
+# Sphinx documentation
+docs/_build/
+# PyInstaller
+#  Usually contains the name of your project but this can be configured
+#  so it is ignored here.
+#  PyInstaller creates a build/ directory with a lot of files and directories
+#  that are not useful to commit.
+#  It is also possible to specify the name of the directory with the --distpath
+#  option.
+#  See https://pyinstaller.readthedocs.io/en/stable/usage.html#options
+#  for more information.
+# Pyre type checker
+.pyre/
+# mypy
+.mypy_cache/
+# Pytype
+.pytype/
+# Cython debug symbols
+cython_debug/
+# VS Code settings
+.vscode/
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+# Jupyter Notebook metadata
+.ipynb
+# Local configuration files
+*.local
+# Environment variables
+.env
+# Coverage reports
+coverage.xml
+# Pytest cache
+.pytest_cache/
+# PyCharm project files
+.idea/
+
+# database files
+*.sqlite3
+*.db
