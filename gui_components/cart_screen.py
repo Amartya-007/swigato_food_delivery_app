@@ -240,72 +240,82 @@ class CartScreen(ctk.CTkFrame):
         bottom_nav_frame = ctk.CTkFrame(self, fg_color=FRAME_FG_COLOR, height=80, corner_radius=12)
         bottom_nav_frame.grid(row=2, column=0, padx=20, pady=(10, 10), sticky="ew")
         bottom_nav_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)  # Equal spacing for 6 columns
-        bottom_nav_frame.pack_propagate(False)
-
-        # Icon button style
+        bottom_nav_frame.pack_propagate(False)        # Icon button style (default/inactive state)
         button_style = {
             "width": 80,
             "height": 50,
             "fg_color": "transparent",
             "hover_color": BUTTON_HOVER_COLOR,
             "text_color": PRIMARY_COLOR,
-            "font": ctk.CTkFont(size=24),
+            "font": ctk.CTkFont(size=28),  # Increased from 24 to 28
             "border_width": 0
         }
-
-        # Home Button 🏠
-        home_btn = ctk.CTkButton(bottom_nav_frame, text="🏠", 
-                                command=self.go_home, **button_style)
-        home_btn.grid(row=0, column=0, padx=10, pady=15)
         
-        home_label = ctk.CTkLabel(bottom_nav_frame, text="Home", 
-                                 font=ctk.CTkFont(size=10), text_color=GRAY_TEXT_COLOR)
-        home_label.grid(row=1, column=0, pady=(0, 5))
-
-        # Cart Button 🧺 (highlighted/active)
-        cart_btn = ctk.CTkButton(bottom_nav_frame, text="🧺", 
-                                fg_color=PRIMARY_COLOR,
-                                hover_color=PRIMARY_COLOR,
-                                text_color="white",
-                                font=ctk.CTkFont(size=24),
-                                width=80, height=50,
-                                border_width=0,
-                                corner_radius=8)
-        cart_btn.grid(row=0, column=1, padx=10, pady=15)
+        # Active button style 
+        active_button_style = {
+            "width": 80,
+            "height": 50,
+            "fg_color": PRIMARY_COLOR,
+            "hover_color": BUTTON_HOVER_COLOR,
+            "text_color": "white",
+            "font": ctk.CTkFont(size=28),
+            "border_width": 0
+        }        # Cart Button 🛒 (highlighted/active)
+        cart_btn = ctk.CTkButton(bottom_nav_frame, text="🛒", 
+                                command=lambda: None,  # Cart is already active
+                                **active_button_style)
+        cart_btn.grid(row=0, column=0, padx=10, pady=(15, 5), sticky="")
         
         cart_label = ctk.CTkLabel(bottom_nav_frame, text="Cart", 
-                                 font=ctk.CTkFont(size=10, weight="bold"), text_color=PRIMARY_COLOR)
-        cart_label.grid(row=1, column=1, pady=(0, 5))
+                                 font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        cart_label.grid(row=1, column=0, pady=(0, 5), sticky="")
 
-        # Orders Button 📋 (only for non-admin)
+        # Restaurants Button 🍽️
+        restaurants_btn = ctk.CTkButton(bottom_nav_frame, text="🍽️", 
+                                      command=self.go_home, **button_style)
+        restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5), sticky="")
+        
+        restaurants_label = ctk.CTkLabel(bottom_nav_frame, text="Home", 
+                                       font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        restaurants_label.grid(row=1, column=1, pady=(0, 5), sticky="")# Orders Button 📋 (only for non-admin)
         if not (hasattr(self.user, "is_admin") and self.user.is_admin):
             orders_btn = ctk.CTkButton(bottom_nav_frame, text="📋", 
                                      command=self.show_orders, **button_style)
-            orders_btn.grid(row=0, column=2, padx=10, pady=15)
+            orders_btn.grid(row=0, column=2, padx=10, pady=(15, 5), sticky="")
             
             orders_label = ctk.CTkLabel(bottom_nav_frame, text="Orders", 
-                                       font=ctk.CTkFont(size=10), text_color=GRAY_TEXT_COLOR)
-            orders_label.grid(row=1, column=2, pady=(0, 5))
+                                       font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+            orders_label.grid(row=1, column=2, pady=(0, 5), sticky="")
 
         # Favorites Button ❤️
         favorites_btn = ctk.CTkButton(bottom_nav_frame, text="❤️", 
                                     command=self.show_favorites, **button_style)
         next_col = 3 if not (hasattr(self.user, "is_admin") and self.user.is_admin) else 2
-        favorites_btn.grid(row=0, column=next_col, padx=10, pady=15)
+        favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
         
         favorites_label = ctk.CTkLabel(bottom_nav_frame, text="Favorites", 
-                                     font=ctk.CTkFont(size=10), text_color=GRAY_TEXT_COLOR)
-        favorites_label.grid(row=1, column=next_col, pady=(0, 5))
+                                     font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        favorites_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
 
-        # Theme Toggle Button 🌙
-        theme_btn = ctk.CTkButton(bottom_nav_frame, text="🌙", 
-                                command=self.toggle_theme, **button_style)
+        # Profile Button 👤
+        profile_btn = ctk.CTkButton(bottom_nav_frame, text="👤", 
+                                   command=self.show_profile, **button_style)
         next_col += 1
-        theme_btn.grid(row=0, column=next_col, padx=10, pady=15)
+        profile_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
         
-        theme_label = ctk.CTkLabel(bottom_nav_frame, text="Theme", 
-                                 font=ctk.CTkFont(size=10), text_color=GRAY_TEXT_COLOR)
-        theme_label.grid(row=1, column=next_col, pady=(0, 5))
+        profile_label = ctk.CTkLabel(bottom_nav_frame, text="Profile", 
+                                    font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        profile_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
+        
+        # Logout Button (larger, different style)
+        logout_btn = ctk.CTkButton(bottom_nav_frame, text="Logout", 
+                                  command=self.logout,
+                                  fg_color=SECONDARY_COLOR,
+                                  hover_color=BUTTON_HOVER_COLOR,
+                                  text_color=BUTTON_TEXT_COLOR,
+                                  font=ctk.CTkFont(size=16, weight="bold"),  # Increased from 14 to 16
+                                  width=100, height=45, corner_radius=8)
+        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15, sticky="")
 
     def go_home(self):
         """Navigate back to the main app/restaurant list"""
@@ -325,6 +335,25 @@ class CartScreen(ctk.CTkFrame):
         # Schedule switching to favorites content after the main app loads
         self.after(100, self._switch_to_favorites)
 
+    def show_profile(self):
+        """Show profile - navigate to main app and switch to profile content"""
+        # Navigate to main app first
+        self.show_main_app_callback(self.user)
+        # Schedule switching to profile content after the main app loads
+        self.after(100, self._switch_to_profile)
+
+    def logout(self):
+        """Handle logout functionality"""
+        # Navigate to main app and trigger logout
+        self.show_main_app_callback(self.user)
+        # Schedule logout after main app loads
+        self.after(100, self._trigger_logout)
+
+    def _trigger_logout(self):
+        """Helper method to trigger logout after main app loads"""
+        if hasattr(self.app, 'current_screen_frame') and hasattr(self.app.current_screen_frame, 'logout_callback'):
+            self.app.current_screen_frame.logout_callback()
+
     def _switch_to_orders(self):
         """Helper method to switch to orders content after main app loads"""
         if hasattr(self.app, 'current_screen_frame') and hasattr(self.app.current_screen_frame, 'show_orders_content'):
@@ -335,10 +364,9 @@ class CartScreen(ctk.CTkFrame):
         if hasattr(self.app, 'current_screen_frame') and hasattr(self.app.current_screen_frame, 'show_favorites_content'):
             self.app.current_screen_frame.show_favorites_content()
 
-    def toggle_theme(self):
-        """Toggle between light and dark theme (placeholder for now)"""
-        # For now, just show a message. In the future, this could switch themes
-        import tkinter.messagebox as msgbox
-        msgbox.showinfo("Theme", "Theme toggle feature coming soon!")
+    def _switch_to_profile(self):
+        """Helper method to switch to profile content after main app loads"""
+        if hasattr(self.app, 'current_screen_frame') and hasattr(self.app.current_screen_frame, 'show_profile_popup'):
+            self.app.current_screen_frame.show_profile_popup()
 
 
