@@ -434,7 +434,7 @@ def populate_sample_restaurant_data():
             {"name": "Gulab Jamun", "desc": "Soft, deep-fried milk solids soaked in sugar syrup.", "price": 100, "cat": "Desserts", "image_filename": "menu_default.jpg"},
             {"name": "Sweet Lassi", "desc": "Traditional Punjabi sweet yogurt drink.", "price": 90, "cat": "Drinks", "image_filename": "menu_default.jpg"}
         ]},
-        {"name": "The Great Hall Baluchi", "cuisine": "Indian", "address": "The Lalit, New Delhi", "description": "Fine dining with exquisite Indian dishes.", "image_filename": "baluchi-the-great-hall.jpg", "menu": [
+        {"name": "The Great Hall Baluchi", "cuisine": "Indian", "address": "The Lalit, New Delhi", "description": "Fine dining with exquisite Indian dishes.", "image_filename": "The_Great_Hall_Baluchi.jpg", "menu": [
             {"name": "Dal Baluchi", "desc": "Signature slow-cooked black lentils.", "price": 650, "cat": "Main Course", "image_filename": "menu_default.jpg"},
             {"name": "Subz Biryani", "desc": "Vegetable biryani with aromatic spices.", "price": 750, "cat": "Main Course", "image_filename": "menu_default.jpg"}
         ]},

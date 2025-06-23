@@ -21,8 +21,8 @@ from utils.database import get_db_connection # For direct DB operations if neede
 
 logger = logging.getLogger("swigato_app.admin_users_screen") # Updated logger name
 
-# Define icon path - ensure swigato_icon.ico is in the root of the project
-ICON_PATH = "swigato_icon.ico"
+# Define icon path - ensure swigato_icon.ico is in the assets folder
+ICON_PATH = os.path.join("assets", "swigato_icon.ico")
 
 class AdminUsersScreen(ctk.CTkFrame): # Renamed class
     def __init__(self, master, app_callbacks, user, **kwargs): # Removed users_data_list
@@ -134,7 +134,7 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         set_swigato_icon(self.add_user_dialog)
         center_window(self.add_user_dialog, 400, 450)
         self.add_user_dialog.configure(fg_color=ADMIN_FRAME_FG_COLOR) # Set Toplevel background
-        self.add_user_dialog.transient(self.master) # Dialog is transient to the main app window
+        self.add_user_dialog.transient(self.master)  # type: ignore[arg-type]
         self.add_user_dialog.grab_set() # Modal behavior
 
         dialog_main_frame = ctk.CTkFrame(self.add_user_dialog, fg_color=ADMIN_FRAME_FG_COLOR) # Use ADMIN_FRAME_FG_COLOR
@@ -263,7 +263,7 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         set_swigato_icon(self.edit_user_dialog)
         center_window(self.edit_user_dialog, 400, 530)
         self.edit_user_dialog.configure(fg_color=ADMIN_FRAME_FG_COLOR) # Set Toplevel background
-        self.edit_user_dialog.transient(self.master)
+        self.edit_user_dialog.transient(self.master)  # type: ignore[arg-type]
         self.edit_user_dialog.grab_set()
 
         dialog_main_frame = ctk.CTkFrame(self.edit_user_dialog, fg_color=ADMIN_FRAME_FG_COLOR) # Use ADMIN_FRAME_FG_COLOR
@@ -380,7 +380,7 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         set_swigato_icon(self.admin_password_prompt_dialog)
         center_window(self.admin_password_prompt_dialog, 380, 280)
         self.admin_password_prompt_dialog.configure(fg_color=ADMIN_FRAME_FG_COLOR)
-        self.admin_password_prompt_dialog.transient(self.master) 
+        self.admin_password_prompt_dialog.transient(self.master)  # type: ignore[arg-type] 
         self.admin_password_prompt_dialog.grab_set()
 
         prompt_main_frame = ctk.CTkFrame(self.admin_password_prompt_dialog, fg_color=ADMIN_FRAME_FG_COLOR) # Use ADMIN_FRAME_FG_COLOR
@@ -682,7 +682,7 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.user_table = CTkTable(
             master=self.table_frame,
             values=table_values, 
-            font=cell_font,
+            font=cell_font,  # type: ignore[arg-type]
             colors=[ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR],
             header_color=ADMIN_TABLE_HEADER_BG_COLOR,
             corner_radius=8,

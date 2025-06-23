@@ -22,8 +22,8 @@ import datetime
 # Setup logger for this module
 logger = logging.getLogger("swigato_app.restaurant_management_screen")
 
-ICON_PATH = "swigato_icon.ico"
-DEFAULT_RESTAURANT_IMAGE = "assets/restaurants/default_restaurant.png" 
+ICON_PATH = os.path.join("assets", "swigato_icon.ico")
+DEFAULT_RESTAURANT_IMAGE = "assets/restaurants/default_restaurant.jpg"  # Fixed extension 
 DEFAULT_MENU_ITEM_IMAGE = "assets/menu_items/menu_default.jpg"
 MENU_ITEM_IMAGE_ASSETS_DIR = "assets/menu_items"
 
@@ -257,7 +257,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
 
         self.menu_table = CTkTable(master=self.menu_table_frame,
                                    values=table_data,
-                                   font=cell_font,
+                                   font=cell_font,  # type: ignore[arg-type]
                                    header_color=ADMIN_TABLE_HEADER_BG_COLOR,
                                    text_color=ADMIN_TABLE_TEXT_COLOR,
                                    hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
@@ -556,7 +556,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                 self.edit_menu_item_dialog_instance.destroy()
 
         self.edit_menu_item_dialog_instance = ctk.CTkToplevel(self)
-        self.edit_menu_item_dialog_instance.editing_item_id = menu_item_id
+        self.edit_menu_item_dialog_instance.editing_item_id = menu_item_id  # type: ignore[attr-defined]
         self.edit_menu_item_dialog_instance.title(f"Edit Menu Item: {menu_item_to_edit.name}")
         set_swigato_icon(self.edit_menu_item_dialog_instance)
         center_window(self.edit_menu_item_dialog_instance, 500, 600)
@@ -712,7 +712,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
         cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE - 1)
         self.reviews_table = CTkTable(master=self.reviews_table_frame,
                                       values=table_data,
-                                      font=cell_font,
+                                      font=cell_font,  # type: ignore[arg-type]
                                       header_color=ADMIN_TABLE_HEADER_BG_COLOR,
                                       text_color=ADMIN_TABLE_TEXT_COLOR,
                                       hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
@@ -762,7 +762,8 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
             self._display_image(image_full_path, self.restaurant_image_label)
             self.restaurant_image_path = image_full_path
         else:
-            self.restaurant_image_label.configure(text="No image available")
+            if self.restaurant_image_label:
+                self.restaurant_image_label.configure(text="No image available")
             self.restaurant_image_path = None
 
     def _upload_restaurant_image(self):
@@ -851,7 +852,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                 logger.info(f"Restaurant ID {self.restaurant_id} updated successfully.")
                 self.details_status_label.configure(text="Restaurant updated successfully!", text_color=ADMIN_PRIMARY_COLOR)
                 if self.master and hasattr(self.master, 'refresh_restaurants'):
-                    self.master.refresh_restaurants()
+                    self.master.refresh_restaurants()  # type: ignore[attr-defined]
                 self._load_menu_items()
             else:
                 logger.error(f"Failed to update restaurant ID {self.restaurant_id}.")
@@ -870,7 +871,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                 self.title(f"Swigato - Manage Restaurant: {self.current_restaurant.name}")
                 self.save_or_create_button.configure(text="Save Changes")
                 if self.master and hasattr(self.master, 'refresh_restaurants'):
-                    self.master.refresh_restaurants()
+                    self.master.refresh_restaurants()  # type: ignore[attr-defined]
                 self._load_menu_items()
             else:
                 logger.error(f"Failed to create restaurant '{name}'.")
@@ -882,4 +883,4 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
             self.on_close_callback()
         self.destroy()
         if self.master and hasattr(self.master, 'restaurant_management_window_closed'):
-            self.master.restaurant_management_window_closed()
+            self.master.restaurant_management_window_closed()  # type: ignore[attr-defined]

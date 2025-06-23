@@ -102,7 +102,7 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
 
         self.table = CTkTable(master=self.table_frame, 
                               values=table_data,
-                              font=cell_font, 
+                              font=cell_font,  # type: ignore[arg-type] 
                               header_color=ADMIN_TABLE_HEADER_BG_COLOR,
                               text_color=ADMIN_TABLE_TEXT_COLOR,
                               hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
@@ -186,10 +186,10 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
-    from utils.database import init_db
+    from utils.database import initialize_database
     from restaurants.models import populate_sample_restaurant_data
     try:
-        init_db()
+        initialize_database()
     except Exception as e:
         logger.error(f"Error initializing DB for standalone test: {e}")
 

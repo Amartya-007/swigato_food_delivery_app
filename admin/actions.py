@@ -234,26 +234,23 @@ def view_all_restaurants_admin(admin_user):
 def add_restaurant_admin(admin_user):
     if not admin_user or not admin_user.is_admin:
         console.print("[red]Permission denied. Admin access required.[/red]")
-        return
-
-    console.print("\n[bold]Add New Restaurant[/bold]")
+        return    console.print("\n[bold]Add New Restaurant[/bold]")
     name = get_validated_input(
-        prompt="Enter restaurant name: ",
-        validation_type="non_empty_string",
+        prompt="Enter restaurant name: ",        validation_type="not_empty",
         custom_error_message="Restaurant name cannot be empty."
     )
     if not name: return
 
     cuisine_type = get_validated_input(
         prompt="Enter cuisine type: ",
-        validation_type="non_empty_string",
+        validation_type="not_empty",
         custom_error_message="Cuisine type cannot be empty."
     )
     if not cuisine_type: return
 
     address = get_validated_input(
         prompt="Enter address: ",
-        validation_type="non_empty_string",
+        validation_type="not_empty",
         custom_error_message="Address cannot be empty."
     )
     if not address: return
@@ -273,12 +270,14 @@ def edit_restaurant_admin(admin_user):
     view_all_restaurants_admin(admin_user)
     restaurant_id = get_validated_input(
         prompt="Enter ID of the restaurant to edit (or 0 to cancel): ",
-        validation_type="integer_or_cancel",
+        validation_type="integer",
         custom_error_message="Invalid ID. Please enter a number or 0 to cancel.",
-        cancel_value=0
+        options={"min_val": 0}
     )
-    if restaurant_id is None or restaurant_id == 0:
-        if restaurant_id == 0: console.print("[yellow]Edit restaurant cancelled.[/yellow]")
+    assert restaurant_id is not None  # Never None when optional=False
+    restaurant_id = int(restaurant_id)
+    if restaurant_id == 0:
+        console.print("[yellow]Edit restaurant cancelled.[/yellow]")
         return
     
     restaurant_to_edit = Restaurant.get_by_id(restaurant_id)
@@ -291,19 +290,22 @@ def edit_restaurant_admin(admin_user):
     
     new_name = get_validated_input(
         prompt=f"Enter new name (current: {restaurant_to_edit.name}): ",
-        validation_type="optional_string",
+        validation_type="not_empty",
+        optional=True,
         default_value=restaurant_to_edit.name
     )
     
     new_cuisine_type = get_validated_input(
         prompt=f"Enter new cuisine type (current: {restaurant_to_edit.cuisine_type}): ",
-        validation_type="optional_string",
+        validation_type="not_empty",
+        optional=True,
         default_value=restaurant_to_edit.cuisine_type
     )
 
     new_address = get_validated_input(
         prompt=f"Enter new address (current: {restaurant_to_edit.address}): ",
-        validation_type="optional_string",
+        validation_type="not_empty",
+        optional=True,
         default_value=restaurant_to_edit.address
     )
 
@@ -321,12 +323,14 @@ def delete_restaurant_admin(admin_user):
     view_all_restaurants_admin(admin_user)
     restaurant_id = get_validated_input(
         prompt="Enter ID of the restaurant to DELETE (or 0 to cancel): ",
-        validation_type="integer_or_cancel",
+        validation_type="integer",
         custom_error_message="Invalid ID. Please enter a number or 0 to cancel.",
-        cancel_value=0
+        options={"min_val": 0}
     )
-    if restaurant_id is None or restaurant_id == 0:
-        if restaurant_id == 0: console.print("[yellow]Restaurant deletion cancelled.[/yellow]")
+    assert restaurant_id is not None  # Never None when optional=False
+    restaurant_id = int(restaurant_id)
+    if restaurant_id == 0:
+        console.print("[yellow]Restaurant deletion cancelled.[/yellow]")
         return
     
     restaurant_to_delete = Restaurant.get_by_id(restaurant_id)
@@ -358,12 +362,14 @@ def manage_restaurant_menu_items_admin(admin_user):
     view_all_restaurants_admin(admin_user)
     restaurant_id = get_validated_input(
         prompt="Enter ID of the restaurant whose menu you want to manage (or 0 to cancel): ",
-        validation_type="integer_or_cancel",
+        validation_type="integer",
         custom_error_message="Invalid ID. Please enter a number or 0 to cancel.",
-        cancel_value=0
+        options={"min_val": 0}
     )
-    if restaurant_id is None or restaurant_id == 0:
-        if restaurant_id == 0: console.print("[yellow]Menu management cancelled.[/yellow]")
+    assert restaurant_id is not None  # Never None when optional=False
+    restaurant_id = int(restaurant_id)
+    if restaurant_id == 0:
+        console.print("[yellow]Menu management cancelled.[/yellow]")
         return
     
     selected_restaurant = Restaurant.get_by_id(restaurant_id)
@@ -380,14 +386,14 @@ def manage_restaurant_menu_items_admin(admin_user):
         console.print("2. Edit Menu Item")
         console.print("3. Delete Menu Item")
         console.print("0. Back to Admin Panel")
-        
         choice = get_validated_input(
             prompt="Choose an action: ",
-            validation_type="integer_range",
+            validation_type="integer",
             custom_error_message="Invalid choice. Please enter a number between 0 and 3.",
-            min_value=0,
-            max_value=3
+            options={"min_val": 0, "max_val": 3}
         )
+        assert choice is not None  # Never None when optional=False
+        choice = int(choice)
         if choice is None:
             continue
 
@@ -404,14 +410,14 @@ def add_menu_item_admin(admin_user, restaurant: Restaurant):
     console.print(f"\n[bold]Add New Menu Item to {restaurant.name}[/bold]")
     name = get_validated_input(
         prompt="Enter item name: ",
-        validation_type="non_empty_string",
+        validation_type="not_empty",
         custom_error_message="Item name cannot be empty."
     )
     if not name: return
 
     description = get_validated_input(
         prompt="Enter item description: ",
-        validation_type="non_empty_string",
+        validation_type="not_empty",
         custom_error_message="Description cannot be empty."
     )
     if not description: return
@@ -425,7 +431,7 @@ def add_menu_item_admin(admin_user, restaurant: Restaurant):
 
     category = get_validated_input(
         prompt="Enter item category (e.g., Main Course, Appetizer, Drinks): ",
-        validation_type="non_empty_string",
+        validation_type="not_empty",
         custom_error_message="Category cannot be empty."
     )
     if not category: return
@@ -443,12 +449,14 @@ def edit_menu_item_admin(admin_user, restaurant: Restaurant):
 
     item_id = get_validated_input(
         prompt="Enter ID of the menu item to edit (or 0 to cancel): ",
-        validation_type="integer_or_cancel",
+        validation_type="integer",
         custom_error_message="Invalid ID. Please enter a number or 0 to cancel.",
-        cancel_value=0
+        options={"min_val": 0}
     )
-    if item_id is None or item_id == 0:
-        if item_id == 0: console.print("[yellow]Edit menu item cancelled.[/yellow]")
+    assert item_id is not None  # Never None when optional=False
+    item_id = int(item_id)
+    if item_id == 0:
+        console.print("[yellow]Edit menu item cancelled.[/yellow]")
         return
         
     menu_item_to_edit = MenuItem.get_by_id(item_id)
@@ -461,29 +469,33 @@ def edit_menu_item_admin(admin_user, restaurant: Restaurant):
     console.print(f"Current Name: {menu_item_to_edit.name}")
     new_name = get_validated_input(
         prompt="Enter new name (or press Enter to keep current): ",
-        validation_type="optional_string",
+        validation_type="not_empty",
+        optional=True,
         default_value=menu_item_to_edit.name
     )
 
     console.print(f"Current Description: {menu_item_to_edit.description}")
     new_description = get_validated_input(
         prompt="Enter new description (or press Enter to keep current): ",
-        validation_type="optional_string",
+        validation_type="not_empty",
+        optional=True,
         default_value=menu_item_to_edit.description
     )
 
     console.print(f"Current Price: {menu_item_to_edit.price}")
     new_price = get_validated_input(
         prompt="Enter new price (or press Enter to keep current): ",
-        validation_type="optional_float_positive",
+        validation_type="float_positive",
+        optional=True,
         custom_error_message="Invalid price. Must be a positive number.",
-        default_value=menu_item_to_edit.price
+        default_value=str(menu_item_to_edit.price)
     )
     
     console.print(f"Current Category: {menu_item_to_edit.category}")
     new_category = get_validated_input(
         prompt="Enter new category (or press Enter to keep current): ",
-        validation_type="optional_string",
+        validation_type="not_empty",
+        optional=True,
         default_value=menu_item_to_edit.category
     )
 
@@ -499,12 +511,14 @@ def delete_menu_item_admin(admin_user, restaurant: Restaurant):
 
     item_id = get_validated_input(
         prompt="Enter ID of the menu item to DELETE (or 0 to cancel): ",
-        validation_type="integer_or_cancel",
+        validation_type="integer",
         custom_error_message="Invalid ID. Please enter a number or 0 to cancel.",
-        cancel_value=0
+        options={"min_val": 0}
     )
-    if item_id is None or item_id == 0:
-        if item_id == 0: console.print("[yellow]Menu item deletion cancelled.[/yellow]")
+    assert item_id is not None  # Never None when optional=False
+    item_id = int(item_id)
+    if item_id == 0:
+        console.print("[yellow]Menu item deletion cancelled.[/yellow]")
         return
 
     menu_item_to_delete = MenuItem.get_by_id(item_id)

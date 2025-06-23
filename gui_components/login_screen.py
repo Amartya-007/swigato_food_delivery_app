@@ -14,11 +14,9 @@ class LoginScreen(ctk.CTkFrame):
         self.password_visible = False  # State for password visibility
 
         # Define path for remember_me.json
-        self.remember_me_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "remember_me.json")
-
-        # Load Swigato image
+        self.remember_me_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "remember_me.json")        # Load Swigato image
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        image_path = os.path.join(current_dir, "..", "swigato_icon.png") 
+        image_path = os.path.join(current_dir, "..", "assets", "swigato_icon.png")  # Fixed path
         try:
             self.swigato_image = ctk.CTkImage(light_image=Image.open(image_path), size=(100, 100))
             self.swigato_image_label = ctk.CTkLabel(self, image=self.swigato_image, text="")
@@ -65,12 +63,24 @@ class LoginScreen(ctk.CTkFrame):
         self.toggle_password_button = ctk.CTkButton(password_input_frame, text="Show", width=40, height=40,
                                                     fg_color=ENTRY_BG_COLOR, text_color=TEXT_COLOR, hover_color=PRIMARY_COLOR,
                                                     command=self.toggle_password_visibility)
-        self.toggle_password_button.grid(row=0, column=1, padx=(5, 0), sticky="nwe")
+        self.toggle_password_button.grid(row=0, column=1, padx=(5, 0), sticky="nwe")        # Create a frame for Remember Me and Forgot Password on the same row
+        remember_forgot_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+        remember_forgot_frame.grid(row=5, column=0, columnspan=2, pady=(0, 15), sticky="ew")
+        remember_forgot_frame.grid_columnconfigure(0, weight=1)  # Left side for remember me
+        remember_forgot_frame.grid_columnconfigure(1, weight=0)  # Right side for forgot password
 
-        self.remember_me_checkbox = ctk.CTkCheckBox(form_frame, text="Remember Me", text_color=TEXT_COLOR,
+        self.remember_me_checkbox = ctk.CTkCheckBox(remember_forgot_frame, text="Remember Me", text_color=TEXT_COLOR,
                                                     fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR,
                                                     border_color=PRIMARY_COLOR)
-        self.remember_me_checkbox.grid(row=5, column=0, columnspan=2, pady=(0, 15), sticky="w")
+        self.remember_me_checkbox.grid(row=0, column=0, sticky="w")
+
+        # Forgot Password Button (moved to same row as Remember Me)
+        forgot_pw_btn = ctk.CTkButton(remember_forgot_frame, text="Forgot Password?", 
+                                     fg_color="transparent", text_color=PRIMARY_COLOR, 
+                                     hover_color=BACKGROUND_COLOR, 
+                                     font=ctk.CTkFont(size=12, underline=True), 
+                                     width=120, command=self.forgot_password_dialog)
+        forgot_pw_btn.grid(row=0, column=1, sticky="e")
 
         self._load_remembered_user()  # Load remembered user
 
@@ -96,10 +106,6 @@ class LoginScreen(ctk.CTkFrame):
                                       font=ctk.CTkFont(size=12, underline=True, weight="bold"),
                                       width=50)
         signup_button.pack(side="left")
-
-        # --- Forgot Password Button ---
-        forgot_pw_btn = ctk.CTkButton(form_frame, text="Forgot Password?", fg_color="transparent", text_color=PRIMARY_COLOR, hover_color=BACKGROUND_COLOR, font=ctk.CTkFont(size=12, underline=True), width=120, command=self.forgot_password_dialog)
-        forgot_pw_btn.grid(row=9, column=0, columnspan=2, pady=(2, 0), sticky="e")
 
     def toggle_password_visibility(self):
         if self.password_visible:
@@ -164,11 +170,11 @@ class LoginScreen(ctk.CTkFrame):
                 msg_label.configure(text="All fields required.", text_color=PRIMARY_COLOR)
                 return
             from users.models import User
-            user = User.get_by_username_or_email(username_or_email)
+            user = User.get_by_username(username_or_email)
             if not user:
                 msg_label.configure(text="User not found.", text_color="#D32F2F")
                 return
-            user.set_password(new_pw)
+            user.update_password(new_pw)
             msg_label.configure(text="Password reset! You can now log in.", text_color=SUCCESS_COLOR)
         ctk.CTkButton(dialog, text="Reset Password", command=do_reset, fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR, text_color=TEXT_COLOR).pack(pady=10)
         ctk.CTkButton(dialog, text="Close", command=dialog.destroy, fg_color="#eee", text_color="#333").pack(pady=(2, 8))

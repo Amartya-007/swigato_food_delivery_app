@@ -12,9 +12,9 @@ class SignupScreen(ctk.CTkFrame):
         self.show_login_callback = show_login_callback
         self.password_visible = False
         self.confirm_password_visible = False
-
+        
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        image_path = os.path.join(current_dir, "..", "swigato_icon.png")
+        image_path = os.path.join(current_dir, "..", "assets", "swigato_icon.png")  # Fixed path
         try:
             self.swigato_image = ctk.CTkImage(light_image=Image.open(image_path), size=(100, 100))
             self.swigato_image_label = ctk.CTkLabel(self, image=self.swigato_image, text="")

@@ -99,7 +99,7 @@ class MainAppScreen(ctk.CTkFrame):
         # --- Sticky Bottom Bar for Logout (use .place() to avoid grid/pack conflict) ---
         self.bottom_bar = ctk.CTkFrame(self, fg_color=FRAME_FG_COLOR, height=60, corner_radius=0)
         self.bottom_bar.place(relx=0, rely=1.0, relwidth=1.0, anchor="sw", y=0)
-        self.bottom_bar.pack_propagate(0)
+        self.bottom_bar.pack_propagate(False)
         border = ctk.CTkFrame(self.bottom_bar, fg_color=FRAME_BORDER_COLOR, height=2)
         border.pack(side="top", fill="x")
 
@@ -342,14 +342,17 @@ class MainAppScreen(ctk.CTkFrame):
 
         headers = ["Order ID", "Restaurant", "Date", "Total (₹)", "Status", "Items", "Address"]
         table_data = [headers]
+        
         for order in orders:
             date_str = order.order_date.strftime('%Y-%m-%d %H:%M') if hasattr(order.order_date, 'strftime') else str(order.order_date)
             items_str = ", ".join([f"{item.name} x{item.quantity}" for item in getattr(order, 'items', [])])
             if len(items_str) > 60:
                 items_str = items_str[:57] + "..."
+            
             address_str = order.delivery_address or "N/A"
             if len(address_str) > 30:
                 address_str = address_str[:27] + "..."
+            
             table_data.append([
                 order.order_id,
                 order.restaurant_name,
@@ -365,12 +368,14 @@ class MainAppScreen(ctk.CTkFrame):
             return
 
         from CTkTable import CTkTable
+        # Font variables for table styling (used in CTkTable constructor)
         cell_font = ctk.CTkFont(size=11)
-        header_font = ctk.CTkFont(size=12, weight="bold")
+        header_font = ctk.CTkFont(size=12, weight="bold")  # Note: Currently not used but available for header styling
+        
         orders_table = CTkTable(
             master=scroll_frame,
             values=table_data,
-            font=cell_font,
+            font=cell_font,  # type: ignore[arg-type]
             header_color=FRAME_BORDER_COLOR,
             text_color=TEXT_COLOR,
             hover_color=PRIMARY_COLOR,
