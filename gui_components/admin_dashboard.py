@@ -160,8 +160,8 @@ class AdminDashboard(ctk.CTkFrame):
         # Only show order history if AdminOrdersScreen is loaded
         if not isinstance(self.current_screen_frame, AdminOrdersScreen):
             self.switch_screen(AdminOrdersScreen, "Order History", "Order History")
-        if hasattr(self.current_screen_frame, 'show_order_history'):
-            self.current_screen_frame.show_order_history()
+        if self.current_screen_frame and hasattr(self.current_screen_frame, 'show_order_history'):
+            self.current_screen_frame.show_order_history()  # type: ignore[attr-defined]
 
     def show(self):
         self.lift()

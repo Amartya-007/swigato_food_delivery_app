@@ -112,7 +112,7 @@ class AdminOrdersScreen(ctk.CTkFrame):
         self.orders_table = CTkTable(
             master=table_parent,
             values=table_data,
-            font=cell_font,
+            font=cell_font,  # type: ignore[arg-type]
             header_color=ADMIN_TABLE_HEADER_BG_COLOR,
             text_color=ADMIN_TABLE_TEXT_COLOR,
             hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
