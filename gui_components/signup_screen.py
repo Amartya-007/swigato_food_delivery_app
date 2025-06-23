@@ -57,8 +57,7 @@ class SignupScreen(ctk.CTkFrame):
                                            border_color=PRIMARY_COLOR, show="*", corner_radius=5, placeholder_text="Create a password")
         self.password_entry.grid(row=1, column=0, pady=(0, 0), sticky="nwe")
         self.password_entry.bind("<Return>", self.signup_event)
-        self.password_entry.bind("<KeyRelease>", self._validate_password_strength_live)
-
+        self.password_entry.bind("<KeyRelease>", self._validate_password_strength_live)        
         self.toggle_pass_btn = ctk.CTkButton(password_frame, text="Show", width=40, height=40,
                                              command=lambda: self.toggle_visibility(self.password_entry, self.toggle_pass_btn, "password_visible"),
                                              fg_color=ENTRY_BG_COLOR, text_color=TEXT_COLOR, hover_color=PRIMARY_COLOR)
@@ -66,23 +65,23 @@ class SignupScreen(ctk.CTkFrame):
 
         self.password_strength_label = ctk.CTkLabel(password_frame, text="", font=ctk.CTkFont(size=10), anchor="w")
         self.password_strength_label.grid(row=2, column=0, columnspan=2, pady=(2, 10), sticky="nwe")
-
+        
         confirm_password_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
         confirm_password_frame.grid(row=4, column=0, columnspan=2, sticky="nwe")
         confirm_password_frame.grid_columnconfigure(0, weight=1)
         confirm_password_frame.grid_columnconfigure(1, weight=0)
 
         confirm_password_label = ctk.CTkLabel(confirm_password_frame, text="Confirm Password:", text_color=TEXT_COLOR, font=ctk.CTkFont(size=14))
-        confirm_password_label.grid(row=0, column=0, columnspan=2, pady=(5,0), sticky="sw")
+        confirm_password_label.grid(row=0, column=0, columnspan=2, pady=(0,0), sticky="sw")
         self.confirm_password_entry = ctk.CTkEntry(confirm_password_frame, width=250, height=40, fg_color=ENTRY_BG_COLOR,
                                                    text_color=TEXT_COLOR, border_color=PRIMARY_COLOR, show="*",
                                                    corner_radius=5, placeholder_text="Confirm your password")
-        self.confirm_password_entry.grid(row=1, column=0, pady=(0, 20), sticky="nwe")
+        self.confirm_password_entry.grid(row=1, column=0, pady=(0, 0), sticky="nwe")
         self.confirm_password_entry.bind("<Return>", self.signup_event)
         self.toggle_confirm_pass_btn = ctk.CTkButton(confirm_password_frame, text="Show", width=40, height=40,
                                                      command=lambda: self.toggle_visibility(self.confirm_password_entry, self.toggle_confirm_pass_btn, "confirm_password_visible"),
                                                      fg_color=ENTRY_BG_COLOR, text_color=TEXT_COLOR, hover_color=PRIMARY_COLOR)
-        self.toggle_confirm_pass_btn.grid(row=1, column=1, padx=(5,0), pady=(0,20), sticky="nwe")
+        self.toggle_confirm_pass_btn.grid(row=1, column=1, padx=(5,0), pady=(0,0), sticky="nwe")
 
         self.signup_button = ctk.CTkButton(form_frame, text="Sign Up", command=self.signup_event, width=300, height=40,
                                            fg_color=PRIMARY_COLOR, text_color=TEXT_COLOR, hover_color=BUTTON_HOVER_COLOR,
