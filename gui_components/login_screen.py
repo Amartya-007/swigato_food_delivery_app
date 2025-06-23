@@ -3,7 +3,7 @@ from PIL import Image
 import os
 import json  # Added for remember me
 from users.auth import log_in
-from gui_Light import PRIMARY_COLOR, BACKGROUND_COLOR, ENTRY_BG_COLOR, TEXT_COLOR, BUTTON_HOVER_COLOR, SUCCESS_COLOR, DISABLED_BUTTON_COLOR
+from gui_Light import PRIMARY_COLOR, BACKGROUND_COLOR, ENTRY_BG_COLOR, TEXT_COLOR, BUTTON_HOVER_COLOR, SUCCESS_COLOR, DISABLED_BUTTON_COLOR, ERROR_COLOR, set_swigato_icon
 
 class LoginScreen(ctk.CTkFrame):
     def __init__(self, master, show_signup_screen_callback, login_success_callback):  # Modified signature
@@ -14,7 +14,9 @@ class LoginScreen(ctk.CTkFrame):
         self.password_visible = False  # State for password visibility
 
         # Define path for remember_me.json
-        self.remember_me_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "remember_me.json")        # Load Swigato image
+        self.remember_me_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "remember_me.json")
+        
+        # Load Swigato image
         current_dir = os.path.dirname(os.path.abspath(__file__))
         image_path = os.path.join(current_dir, "..", "assets", "swigato_icon.png")  # Fixed path
         try:
@@ -152,32 +154,48 @@ class LoginScreen(ctk.CTkFrame):
     def forgot_password_dialog(self):
         dialog = ctk.CTkToplevel(self)
         dialog.title("Reset Password")
-        dialog.geometry("340x260")
+        dialog.geometry("380x320")  # Increased height to accommodate all elements
+        
+        # Center the dialog on the screen
+        dialog.update_idletasks()  # Ensure the window size is calculated
+        width = 380
+        height = 320
+        screen_width = dialog.winfo_screenwidth()
+        screen_height = dialog.winfo_screenheight()
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        
         dialog.grab_set()
-        ctk.CTkLabel(dialog, text="Reset Password", font=ctk.CTkFont(size=18, weight="bold"), text_color=PRIMARY_COLOR).pack(pady=(18, 8))
-        ctk.CTkLabel(dialog, text="Enter your username or email:").pack(pady=(4, 2))
-        user_entry = ctk.CTkEntry(dialog, width=220)
-        user_entry.pack(pady=(2, 8))
-        ctk.CTkLabel(dialog, text="New Password:").pack(pady=(4, 2))
-        new_pw_entry = ctk.CTkEntry(dialog, show="*", width=220)
-        new_pw_entry.pack(pady=(2, 8))
-        msg_label = ctk.CTkLabel(dialog, text="", font=ctk.CTkFont(size=12))
-        msg_label.pack(pady=(4, 2))
+        dialog.configure(fg_color=BACKGROUND_COLOR)  # Apply light theme background
+        
+        # Set window icon after dialog is fully configured
+        set_swigato_icon(dialog)
+        
+        ctk.CTkLabel(dialog, text="Reset Password", font=ctk.CTkFont(size=18, weight="bold"), text_color=PRIMARY_COLOR).pack(pady=(20, 15))
+        ctk.CTkLabel(dialog, text="Enter your username or email:", text_color=TEXT_COLOR).pack(pady=(5, 2))
+        user_entry = ctk.CTkEntry(dialog, width=250, fg_color=ENTRY_BG_COLOR, text_color=TEXT_COLOR, border_color=PRIMARY_COLOR)
+        user_entry.pack(pady=(2, 10))
+        ctk.CTkLabel(dialog, text="New Password:", text_color=TEXT_COLOR).pack(pady=(5, 2))
+        new_pw_entry = ctk.CTkEntry(dialog, show="*", width=250, fg_color=ENTRY_BG_COLOR, text_color=TEXT_COLOR, border_color=PRIMARY_COLOR)
+        new_pw_entry.pack(pady=(2, 10))
+        msg_label = ctk.CTkLabel(dialog, text="", font=ctk.CTkFont(size=12), text_color=TEXT_COLOR)
+        msg_label.pack(pady=(5, 10))
         def do_reset():
             username_or_email = user_entry.get().strip()
             new_pw = new_pw_entry.get().strip()
             if not username_or_email or not new_pw:
-                msg_label.configure(text="All fields required.", text_color=PRIMARY_COLOR)
+                msg_label.configure(text="All fields required.", text_color=ERROR_COLOR)
                 return
             from users.models import User
             user = User.get_by_username(username_or_email)
             if not user:
-                msg_label.configure(text="User not found.", text_color="#D32F2F")
+                msg_label.configure(text="User not found.", text_color=ERROR_COLOR)
                 return
             user.update_password(new_pw)
             msg_label.configure(text="Password reset! You can now log in.", text_color=SUCCESS_COLOR)
-        ctk.CTkButton(dialog, text="Reset Password", command=do_reset, fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR, text_color=TEXT_COLOR).pack(pady=10)
-        ctk.CTkButton(dialog, text="Close", command=dialog.destroy, fg_color="#eee", text_color="#333").pack(pady=(2, 8))
+        ctk.CTkButton(dialog, text="Reset Password", command=do_reset, fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR, text_color=TEXT_COLOR, width=200).pack(pady=(10, 5))
+        ctk.CTkButton(dialog, text="Close", command=dialog.destroy, fg_color=ENTRY_BG_COLOR, text_color=TEXT_COLOR, hover_color=BUTTON_HOVER_COLOR, width=200).pack(pady=(5, 15))
 
     def _load_remembered_user(self):
         try:
