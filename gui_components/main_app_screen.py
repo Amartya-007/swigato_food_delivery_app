@@ -73,9 +73,10 @@ class MainAppScreen(ctk.CTkFrame):
 
         # Initialize content areas
         self.setup_content_areas()
+          # Show restaurants by default
+        self.show_restaurants_content()
         
-        # Show restaurants by default
-        self.show_restaurants_content()        # --- Bottom Navigation Bar ---
+        # --- Bottom Navigation Bar ---
         self.create_bottom_nav_bar()
 
     def create_bottom_nav_bar(self):
@@ -107,62 +108,60 @@ class MainAppScreen(ctk.CTkFrame):
             "hover_color": BUTTON_HOVER_COLOR,
             "text_color": "white",
             "font": ctk.CTkFont(size=28),
-            "border_width": 0
-        }
-
+            "border_width": 0        }
+        
         # Cart Button 🛒
         cart_btn = ctk.CTkButton(bottom_nav_frame, text="🛒", 
                                 command=lambda: self.handle_nav_click("cart"), **button_style)
-        cart_btn.grid(row=0, column=0, padx=10, pady=(15, 5), sticky="")
+        cart_btn.grid(row=0, column=0, padx=10, pady=(15, 5))
         self.nav_buttons["cart"] = cart_btn
         
         # Create tooltip for cart
         cart_label = ctk.CTkLabel(bottom_nav_frame, text="Cart", 
                                  font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        cart_label.grid(row=1, column=0, pady=(0, 5), sticky="")
-
-        # Restaurants Button 🍽️
+        cart_label.grid(row=1, column=0, pady=(0, 5))
+          # Restaurants Button 🍽️
         restaurants_btn = ctk.CTkButton(bottom_nav_frame, text="🍽️", 
                                       command=lambda: self.handle_nav_click("home"), **active_button_style)
-        restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5), sticky="")
+        restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5))
         self.nav_buttons["home"] = restaurants_btn
         
         restaurants_label = ctk.CTkLabel(bottom_nav_frame, text="Home", 
                                        font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        restaurants_label.grid(row=1, column=1, pady=(0, 5), sticky="")
+        restaurants_label.grid(row=1, column=1, pady=(0, 5))
 
-        # Orders Button 📋 (only for non-admin)
+        # Only show Orders button if user is not an admin
         if not (hasattr(self.user, "is_admin") and self.user.is_admin):
             orders_btn = ctk.CTkButton(bottom_nav_frame, text="📋", 
                                      command=lambda: self.handle_nav_click("orders"), **button_style)
-            orders_btn.grid(row=0, column=2, padx=10, pady=(15, 5), sticky="")
+            orders_btn.grid(row=0, column=2, padx=10, pady=(15, 5))
             self.nav_buttons["orders"] = orders_btn
             
             orders_label = ctk.CTkLabel(bottom_nav_frame, text="Orders", 
                                        font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-            orders_label.grid(row=1, column=2, pady=(0, 5), sticky="")
+            orders_label.grid(row=1, column=2, pady=(0, 5))
 
         # Favorites Button ❤️
         favorites_btn = ctk.CTkButton(bottom_nav_frame, text="❤️", 
                                     command=lambda: self.handle_nav_click("favorites"), **button_style)
         next_col = 3 if not (hasattr(self.user, "is_admin") and self.user.is_admin) else 2
-        favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
+        favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5))
         self.nav_buttons["favorites"] = favorites_btn
         
         favorites_label = ctk.CTkLabel(bottom_nav_frame, text="Favorites", 
                                      font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        favorites_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
+        favorites_label.grid(row=1, column=next_col, pady=(0, 5))
         
         # Profile Button 👤
         profile_btn = ctk.CTkButton(bottom_nav_frame, text="👤", 
                                 command=lambda: self.handle_nav_click("profile"), **button_style)
         next_col += 1
-        profile_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
+        profile_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5))
         self.nav_buttons["profile"] = profile_btn
         
         profile_label = ctk.CTkLabel(bottom_nav_frame, text="Profile", 
                                  font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        profile_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
+        profile_label.grid(row=1, column=next_col, pady=(0, 5))
         
         # Logout Button (larger, different style)
         logout_btn = ctk.CTkButton(bottom_nav_frame, text="Logout", 
@@ -172,7 +171,7 @@ class MainAppScreen(ctk.CTkFrame):
                                   text_color=BUTTON_TEXT_COLOR,
                                   font=ctk.CTkFont(size=16, weight="bold"),  # Increased from 14 to 16
                                   width=100, height=45, corner_radius=8)
-        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15, sticky="")
+        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15)
         
         # Set current active tab
         self.current_nav_tab = "home"
@@ -184,7 +183,7 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Handle the actual navigation
         if tab_name == "cart":
-            self.show_cart_callback()
+            self.show_cart_content()
         elif tab_name == "home":
             self.show_restaurants_content()
         elif tab_name == "orders":
@@ -262,15 +261,34 @@ class MainAppScreen(ctk.CTkFrame):
         self.orders_scroll_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
         self.orders_scroll_frame.grid_columnconfigure(0, weight=1)
 
-        # Hide all content frames initially
+        # Cart content frame
+        self.cart_content_frame = ctk.CTkFrame(self.main_content_frame, fg_color=BACKGROUND_COLOR)
+        self.cart_content_frame.grid_columnconfigure(0, weight=1)
+        self.cart_content_frame.grid_rowconfigure(1, weight=1)
+
+        cart_heading = ctk.CTkLabel(
+            self.cart_content_frame,
+            text="Your Shopping Cart",
+            font=ctk.CTkFont(size=25, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        cart_heading.grid(row=0, column=0, pady=(10, 5), sticky="n")
+
+        self.cart_scroll_frame = ctk.CTkScrollableFrame(self.cart_content_frame, fg_color=FRAME_FG_COLOR, 
+                                                       corner_radius=14, border_width=1, border_color=FRAME_BORDER_COLOR)
+        self.cart_scroll_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        self.cart_scroll_frame.grid_columnconfigure(0, weight=1)        # Hide all content frames initially
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
+        self.cart_content_frame.grid_remove()
+        self.cart_content_frame.grid_remove()
 
     def show_restaurants_content(self):
         """Show restaurants content"""
         # Hide other content
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
+        self.cart_content_frame.grid_remove()
         
         # Show restaurants
         self.restaurant_scroll_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
@@ -281,6 +299,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Hide other content
         self.restaurant_scroll_frame.grid_remove()
         self.orders_content_frame.grid_remove()
+        self.cart_content_frame.grid_remove()
         
         # Show favorites
         self.favorites_content_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
@@ -291,10 +310,22 @@ class MainAppScreen(ctk.CTkFrame):
         # Hide other content
         self.restaurant_scroll_frame.grid_remove()
         self.favorites_content_frame.grid_remove()
+        self.cart_content_frame.grid_remove()
         
         # Show orders
         self.orders_content_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         self.load_order_history()
+
+    def show_cart_content(self):
+        """Show cart content"""
+        # Hide other content
+        self.restaurant_scroll_frame.grid_remove()
+        self.favorites_content_frame.grid_remove()
+        self.orders_content_frame.grid_remove()
+        
+        # Show cart
+        self.cart_content_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        self.load_cart_items()
 
     def change_password(self):
         """Handle password change"""
@@ -728,14 +759,24 @@ class MainAppScreen(ctk.CTkFrame):
                            font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR).pack(pady=(2, 10))
 
     def show_profile_popup(self):
-        """Show profile popup window with user data and options using CTkTabview"""
-        # Destroy any previous profile popup
+        """Show profile popup window with user data and options using CTkTabview"""        # Destroy any previous profile popup
         if hasattr(self, 'profile_popup') and self.profile_popup and self.profile_popup.winfo_exists():
             self.profile_popup.destroy()
             
         self.profile_popup = ctk.CTkToplevel(self)
         self.profile_popup.title("User Profile")
         self.profile_popup.geometry("550x650")
+        
+        # Center the popup window
+        self.profile_popup.update_idletasks()  # Ensure geometry is updated
+        width = 550
+        height = 650
+        screen_width = self.profile_popup.winfo_screenwidth()
+        screen_height = self.profile_popup.winfo_screenheight()
+        x = int((screen_width / 2) - (width / 2))
+        y = int((screen_height / 2) - (height / 2))
+        self.profile_popup.geometry(f"{width}x{height}+{x}+{y}")
+        
         set_swigato_icon(self.profile_popup)
         self.profile_popup.grab_set()
         self.profile_popup.configure(fg_color=BACKGROUND_COLOR)
@@ -1012,3 +1053,188 @@ class MainAppScreen(ctk.CTkFrame):
                 self.username_message.configure(text="Failed to change username.", text_color=ERROR_COLOR)
         except Exception as e:
             self.username_message.configure(text=f"Error: {str(e)}", text_color=ERROR_COLOR)
+
+    def load_cart_items(self):
+        """Load and display cart items in the cart tab"""
+        # Clear existing widgets
+        for widget in self.cart_scroll_frame.winfo_children():
+            widget.destroy()
+
+        # Get cart from the app reference
+        cart = getattr(self.app_ref, 'cart', None)
+        
+        if not cart or not cart.items:
+            # Empty cart message
+            empty_label = ctk.CTkLabel(
+                self.cart_scroll_frame, 
+                text="Your cart is empty.\nBrowse restaurants and add items to get started!",
+                font=ctk.CTkFont(size=16), 
+                text_color=GRAY_TEXT_COLOR,
+                justify="center"
+            )
+            empty_label.pack(pady=50)
+            return
+
+        # Display cart items
+        for i, cart_item in enumerate(cart.items.values()):
+            self._add_cart_item_card(self.cart_scroll_frame, cart_item)
+
+        # Add checkout section at the bottom
+        checkout_frame = ctk.CTkFrame(self.cart_scroll_frame, fg_color=FRAME_FG_COLOR, corner_radius=12)
+        checkout_frame.pack(fill="x", pady=(20, 10), padx=10)
+        checkout_frame.grid_columnconfigure(0, weight=1)
+        checkout_frame.grid_columnconfigure(1, weight=0)
+
+        total_price = cart.get_total_price()
+        total_label = ctk.CTkLabel(
+            checkout_frame, 
+            text=f"Total: ₹{total_price:.2f}", 
+            font=ctk.CTkFont(size=18, weight="bold"), 
+            text_color=PRIMARY_COLOR
+        )
+        total_label.grid(row=0, column=0, padx=15, pady=15, sticky="w")
+
+        checkout_button = ctk.CTkButton(
+            checkout_frame,
+            text="Proceed to Checkout",
+            command=self._handle_checkout,
+            fg_color=SUCCESS_COLOR,
+            hover_color="#00C78C",
+            text_color="white",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            width=200,
+            height=40,
+            corner_radius=8
+        )
+        checkout_button.grid(row=0, column=1, padx=15, pady=15)
+
+    def _add_cart_item_card(self, parent_frame, cart_item):
+        """Add a cart item card to the parent frame"""
+        item_card = ctk.CTkFrame(
+            parent_frame, 
+            fg_color=BACKGROUND_COLOR, 
+            border_width=1,
+            border_color=FRAME_BORDER_COLOR,
+            corner_radius=12
+        )
+        item_card.pack(pady=8, padx=10, fill="x")
+        item_card.grid_columnconfigure(1, weight=1)
+
+        # Item name
+        item_name_label = ctk.CTkLabel(
+            item_card, 
+            text=cart_item.menu_item.name, 
+            font=ctk.CTkFont(size=16, weight="bold"), 
+            text_color=TEXT_COLOR,
+            anchor="w"
+        )
+        item_name_label.grid(row=0, column=1, padx=15, pady=(15, 5), sticky="ew")
+
+        # Item price
+        item_price_label = ctk.CTkLabel(
+            item_card, 
+            text=f"₹{cart_item.menu_item.price:.2f} each", 
+            font=ctk.CTkFont(size=12), 
+            text_color=GRAY_TEXT_COLOR,
+            anchor="w"
+        )
+        item_price_label.grid(row=1, column=1, padx=15, pady=(0, 15), sticky="ew")
+
+        # Quantity controls
+        quantity_frame = ctk.CTkFrame(item_card, fg_color="transparent")
+        quantity_frame.grid(row=0, column=2, rowspan=2, padx=10, pady=10, sticky="e")
+
+        minus_button = ctk.CTkButton(
+            quantity_frame, 
+            text="−", 
+            width=32, 
+            height=32,
+            fg_color=SECONDARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=lambda ci=cart_item: self._update_cart_quantity(ci, -1)
+        )
+        minus_button.pack(side="left", padx=(0, 5))
+
+        quantity_label = ctk.CTkLabel(
+            quantity_frame, 
+            text=str(cart_item.quantity), 
+            font=ctk.CTkFont(size=14, weight="bold"), 
+            text_color=TEXT_COLOR,
+            width=40
+        )
+        quantity_label.pack(side="left", padx=5)
+
+        plus_button = ctk.CTkButton(
+            quantity_frame, 
+            text="+", 
+            width=32, 
+            height=32,
+            fg_color=PRIMARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=lambda ci=cart_item: self._update_cart_quantity(ci, 1)
+        )
+        plus_button.pack(side="left", padx=(5, 0))
+
+        # Item total
+        item_total_label = ctk.CTkLabel(
+            item_card, 
+            text=f"₹{cart_item.item_total:.2f}", 
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        item_total_label.grid(row=0, column=3, rowspan=2, padx=15, pady=10, sticky="e")
+        
+        # Remove button
+        remove_button = ctk.CTkButton(
+            item_card, 
+            text="Remove", 
+            width=80, 
+            height=32,
+            fg_color=ERROR_COLOR, 
+            hover_color="#C00000",
+            text_color="white",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=lambda item_id=cart_item.menu_item.item_id: self._remove_cart_item(item_id)
+        )
+        remove_button.grid(row=0, column=4, rowspan=2, padx=15, pady=10, sticky="e")
+
+    def _update_cart_quantity(self, cart_item, change):
+        """Update quantity of an item in the cart"""
+        cart = getattr(self.app_ref, 'cart', None)
+        if not cart:
+            return
+            
+        new_quantity = cart_item.quantity + change
+        if new_quantity <= 0:
+            self._remove_cart_item(cart_item.menu_item.item_id)
+        else:
+            if change > 0:
+                cart.add_item(cart_item.menu_item, change)
+            elif change < 0:
+                cart.remove_item(cart_item.menu_item.item_id, abs(change))
+        self.load_cart_items()
+
+    def _remove_cart_item(self, menu_item_id):
+        """Remove an item from the cart"""
+        cart = getattr(self.app_ref, 'cart', None)
+        if cart:
+            cart.remove_item(menu_item_id)
+            self.load_cart_items()
+
+    def _handle_checkout(self):
+        """Handle checkout process"""
+        # Use the original cart screen checkout functionality
+        if hasattr(self.app_ref, 'handle_checkout'):
+            self.app_ref.handle_checkout()
+        else:
+            # Fallback to showing cart screen
+            self.show_cart_callback()
+
+    def refresh_cart_if_visible(self):
+        """Refresh cart content if cart is currently visible"""
+        if hasattr(self, 'current_nav_tab') and self.current_nav_tab == "cart":
+            self.load_cart_items()
