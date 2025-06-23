@@ -1,4 +1,5 @@
 .venv/
+venv/
 
 # OS-generated files
 # Ignore macOS .DS_Store files
