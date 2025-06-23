@@ -30,8 +30,8 @@ BODY_FONT_SIZE = FONT_SIZE_NORMAL    # e.g., 14
 BUTTON_FONT_SIZE = FONT_SIZE_NORMAL  # e.g., 14
 
 # Other Constants
-WINDOW_ICON_PATH = "swigato_icon.ico"
-APP_LOGO_PATH = "swigato_icon.png"
+WINDOW_ICON_PATH = "assets/swigato_icon.ico"
+APP_LOGO_PATH = "assets/swigato_icon.png"
 
 # Admin Panel Light Theme Colors
 ADMIN_BACKGROUND_COLOR = "#F0F2F5"  # Light Grayish Blue (Modern UI)
