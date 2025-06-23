@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import os
 from PIL import Image, ImageTk
-from gui_Light import BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, SEMI_TRANSPARENT_OVERLAY, CLOSE_BUTTON_BG, CLOSE_BUTTON_TEXT, ERROR_COLOR, BUTTON_TEXT_COLOR
+from gui_Light import BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, SEMI_TRANSPARENT_OVERLAY, CLOSE_BUTTON_BG, CLOSE_BUTTON_TEXT, ERROR_COLOR, BUTTON_TEXT_COLOR, set_swigato_icon
 from utils.image_loader import load_image
 from utils.logger import log
 from orders.models import get_orders_by_user_id
@@ -219,6 +219,7 @@ class MainAppScreen(ctk.CTkFrame):
         self.favorites_window = ctk.CTkToplevel(self)
         self.favorites_window.title("Your Favorites")
         self.favorites_window.geometry("900x500")
+        set_swigato_icon(self.favorites_window)
         self.favorites_window.grab_set()
         self.favorites_window.configure(fg_color=FRAME_FG_COLOR)
         self.favorites_window.grid_columnconfigure(0, weight=1)
@@ -311,6 +312,7 @@ class MainAppScreen(ctk.CTkFrame):
         self.order_history_window = ctk.CTkToplevel(self)
         self.order_history_window.title("Order History")
         self.order_history_window.geometry("900x500")
+        set_swigato_icon(self.order_history_window)
         self.order_history_window.grab_set()
 
         # Light theme: white background, dark text
