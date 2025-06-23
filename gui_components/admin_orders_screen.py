@@ -6,7 +6,7 @@ from gui_Light import (
     ADMIN_BACKGROUND_COLOR, ADMIN_FRAME_FG_COLOR, ADMIN_TEXT_COLOR,
     ADMIN_PRIMARY_ACCENT_COLOR, ADMIN_SECONDARY_ACCENT_COLOR,
     ADMIN_TABLE_HEADER_BG_COLOR, ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR,
-    ADMIN_TABLE_BORDER_COLOR, ADMIN_TABLE_TEXT_COLOR, ERROR_COLOR, ADMIN_PRIMARY_COLOR, ADMIN_BUTTON_TEXT_COLOR, ADMIN_BUTTON_HOVER_COLOR
+    ADMIN_TABLE_BORDER_COLOR, ADMIN_TABLE_TEXT_COLOR, ERROR_COLOR, ADMIN_PRIMARY_COLOR, ADMIN_BUTTON_TEXT_COLOR, ADMIN_BUTTON_HOVER_COLOR, set_swigato_icon
 )
 from orders.models import Order
 
@@ -143,6 +143,7 @@ class AdminOrdersScreen(ctk.CTkFrame):
         dialog = ctk.CTkToplevel(self)
         dialog.title(f"Change Status for Order {order.order_id}")
         dialog.geometry("420x280")
+        set_swigato_icon(dialog)
         dialog.configure(fg_color=ADMIN_BACKGROUND_COLOR)
         dialog.grab_set()
         ctk.CTkLabel(dialog, text=f"Order ID: {order.order_id}", font=ctk.CTkFont(family=FONT_FAMILY, size=18, weight="bold"), text_color=ADMIN_PRIMARY_COLOR, fg_color="transparent").pack(pady=(24,8))
