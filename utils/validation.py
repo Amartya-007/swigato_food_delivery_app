@@ -1,11 +1,11 @@
 
-# filepath: g:\\swigato_project\\utils\\validation.py
+# File: utils/validation.py
 from rich.console import Console
 import re
 
 console = Console()
 
-def get_validated_input(prompt: str, validation_type: str, options: dict = None, optional: bool = False, default_value: str | None = None, custom_error_message: str | None = None) -> str | None:
+def get_validated_input(prompt: str, validation_type: str, options: dict | None = None, optional: bool = False, default_value: str | None = None, custom_error_message: str | None = None) -> str | None:
     """
     Prompts the user for input and validates it based on the validation_type.
 

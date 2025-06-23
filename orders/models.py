@@ -28,13 +28,14 @@ class OrderItem:
 
 class Order:
     def __init__(self, user_id, restaurant_id, restaurant_name, total_amount, delivery_address, 
-                 order_id=None, order_date=None, status=None, items=None):
+                 order_id=None, order_date=None, status=None, items=None, customer_username=None):
         self.order_id = order_id # Database primary key
         self.user_id = user_id # Can be None for guest orders if DB schema allows
         self.restaurant_id = restaurant_id
         self.restaurant_name = restaurant_name # Denormalized for easy display
         self.items = items if items is not None else [] # List of OrderItem objects, loaded separately
         self.total_amount = total_amount
+        self.customer_username = customer_username if customer_username else 'Guest' # Customer's username
         
         if isinstance(order_date, str):
             try:
@@ -94,9 +95,9 @@ class Order:
                     items=[], # Pass empty list as we don't fetch items here
                     status=row_dict['status'],
                     order_date=row_dict['order_date'],
-                    delivery_address=row_dict['delivery_address']
+                    delivery_address=row_dict['delivery_address'],
+                    customer_username=row_dict['customer_username'] if row_dict['customer_username'] else 'Guest'
                 )
-                order.customer_username = row_dict['customer_username'] if row_dict['customer_username'] else 'Guest'
                 orders.append(order)
             return orders
         except Exception as e:
