@@ -21,8 +21,8 @@ from utils.database import get_db_connection # For direct DB operations if neede
 
 logger = logging.getLogger("swigato_app.admin_users_screen") # Updated logger name
 
-# Define icon path - ensure swigato_icon.ico is in the root of the project
-ICON_PATH = "swigato_icon.ico"
+# Define icon path - ensure swigato_icon.ico is in the assets folder
+ICON_PATH = os.path.join("assets", "swigato_icon.ico")
 
 class AdminUsersScreen(ctk.CTkFrame): # Renamed class
     def __init__(self, master, app_callbacks, user, **kwargs): # Removed users_data_list
