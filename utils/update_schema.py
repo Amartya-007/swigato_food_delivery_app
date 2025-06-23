@@ -59,3 +59,4 @@ def add_image_filename_columns():
 if __name__ == "__main__":
     # sys.path is adjusted at the top, and imports are resolved globally.
     add_image_filename_columns()
+  
