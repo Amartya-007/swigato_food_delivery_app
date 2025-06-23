@@ -1,4 +1,4 @@
-# Swigato 🍔🍕🍟 – The Food App I Wish My Hostel Had
+# Swigato 🍔🍕🍟 – The Food App
 
 ## *A Python Project by Amartya Vishwakarma (a.k.a. That Guy Who Codes at 2AM)*
 
@@ -51,109 +51,53 @@ This project started as a CLI app for a college assignment, but then I got carri
 ## 🏗️ How It’s All Organized (a.k.a. My Digital Mess)
 
 ```text
-├── admin
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (133.0 B)
-│   │   └── actions.cpython-312.pyc (24.1 KB)
-│   ├── __init__.py
-│   └── actions.py (20.6 KB)
-├── assets
-│   ├── menu_items
-│   │   ├── menu_1.jpeg (12.9 KB)
-│   │   ├── menu_2.jpeg (12.1 KB)
-│   │   ├── menu_3.jpeg (14.9 KB)
-│   │   ├── menu_4.jpeg (13.8 KB)
-│   │   ├── menu_5.jpeg (12.0 KB)
-│   │   └── menu_default.jpg (44.2 KB)
-│   └── restaurants
-│       ├── badkul.jpeg (9.6 KB)
-│       ├── default_restaurant.jpg (78.0 KB)
-│       ├── resort-4471852_1280.jpg (250.6 KB)
-│       ├── restaurant_test.jpg (8.3 MB)
-│       ├── restaurent_a.jpeg (20.2 KB)
-│       ├── restaurent_b.jpeg (10.3 KB)
-│       ├── restaurent_c.jpeg (9.8 KB)
-│       └── The_Great_Hall_Baluchi.jpg (279.4 KB)
-├── cart
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (132.0 B)
-│   │   └── models.cpython-312.pyc (6.8 KB)
-│   ├── __init__.py
-│   └── models.py (4.3 KB)
-├── data
-│   ├── remember_me.json (23.0 B)
-│   ├── swigato_app.log (587.6 KB)
-│   └── swigato.db (68.0 KB)
-├── delivery
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (136.0 B)
-│   │   └── tracker.cpython-312.pyc (857.0 B)
-│   ├── __init__.py
-│   └── tracker.py (573.0 B)
-├── gui_components
-│   ├── admin_dashboard.py (8.0 KB)
-│   ├── admin_menus_screen.py (838.0 B)
-│   ├── admin_orders_screen.py (8.7 KB)
-│   ├── admin_restaurants_screen_new.py (9.8 KB)
-│   ├── admin_restaurants_screen.py (9.8 KB)
-│   ├── admin_reviews_screen.py (4.7 KB)
-│   ├── admin_screen.py (27.3 KB)
-│   ├── admin_users_screen_backup.py (39.1 KB)
-│   ├── admin_users_screen.py (39.1 KB)
-│   ├── cart_screen.py (7.9 KB)
-│   ├── login_screen.py (9.6 KB)
-│   ├── main_app_screen.py (12.7 KB)
-│   ├── menu_screen.py (22.2 KB)
-│   ├── restaurant_management_screen.py (52.6 KB)
-│   ├── review_submission_screen.py (6.8 KB)
-│   ├── signup_screen.py (10.5 KB)
-│   └── swigato_dialog.py (3.5 KB)
-├── orders
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (134.0 B)
-│   │   └── models.cpython-312.pyc (11.9 KB)
-│   ├── __init__.py
-│   └── models.py (9.4 KB)
-├── restaurants
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (139.0 B)
-│   │   └── models.cpython-312.pyc (30.1 KB)
-│   ├── __init__.py
-│   └── models.py (23.4 KB)
-├── reviews
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (135.0 B)
-│   │   └── models.cpython-312.pyc (11.8 KB)
-│   ├── __init__.py
-│   └── models.py (10.7 KB)
-├── users
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (133.0 B)
-│   │   ├── auth.cpython-312.pyc (2.1 KB)
-│   │   └── models.cpython-312.pyc (11.6 KB)
-│   ├── __init__.py
-│   ├── auth.py (1.6 KB)
-│   └── models.py (8.4 KB)
-├── utils
-│   ├── __pycache__
-│   │   ├── __init__.cpython-312.pyc (133.0 B)
-│   │   ├── database.cpython-312.pyc (9.8 KB)
-│   │   ├── logger.cpython-312.pyc (2.1 KB)
-│   │   └── validation.cpython-312.pyc (6.9 KB)
-│   ├── __init__.py
-│   ├── database.py (7.5 KB)
-│   ├── image_loader.py (1.4 KB)
-│   ├── logger.py (1.4 KB)
-│   ├── update_schema.py (2.3 KB)
-│   └── validation.py (7.8 KB)
-├── .gitignore (1.2 KB)
-├── gui_app.py (15.4 KB)
-├── gui_constants.py (3.8 KB)
-├── main.py (22.4 KB)
-├── README.md (6.5 KB)
-├── requirements.txt (42.0 B)
-├── swigato_icon.ico (22.2 KB)
-└── swigato_icon.png (1.2 MB)
+📁 swigato_food_delivery_app/
+├── 📂 admin/                    # Admin functionalities
+│   └── actions.py              # All admin operations & database management
+├── 📂 assets/                  # All the visual goodies
+│   ├── swigato_icon.ico        # Our brand identity
+│   ├── swigato_icon.png        # Brand logo (PNG version)
+│   ├── 📂 menu_items/          # Food pics to make you hungry
+│   └── 📂 restaurants/         # Restaurant images & banners
+├── 📂 cart/                    # Shopping cart logic
+│   └── models.py              # Cart data models & operations
+├── 📂 data/                    # Where all the magic is stored
+│   ├── swigato.db             # SQLite database (the heart)
+│   ├── swigato_app.log        # Debug logs (my debugging diary)
+│   └── remember_me.json       # For "Remember Me" functionality
+├── 📂 delivery/                # Delivery tracking (future scope)
+│   └── tracker.py             # Order status tracking
+├── 📂 gui_components/          # All the GUI screens & dialogs
+│   ├── admin_dashboard.py     # Admin control panel
+│   ├── admin_orders_screen.py # Order management for admin
+│   ├── admin_restaurants_screen.py # Restaurant management
+│   ├── admin_reviews_screen.py # Review moderation panel
+│   ├── admin_users_screen.py  # User management dashboard
+│   ├── cart_screen.py         # Shopping cart interface
+│   ├── login_screen.py        # User authentication
+│   ├── main_app_screen.py     # Main application window
+│   ├── menu_screen.py         # Restaurant menu display
+│   ├── restaurant_management_screen.py # Restaurant operations
+│   └── signup_screen.py       # New user registration
+├── 📂 orders/                  # Order processing logic
+│   └── models.py              # Order data models & database ops
+├── 📂 restaurants/             # Restaurant management
+│   └── models.py              # Restaurant data & menu operations
+├── 📂 reviews/                 # Rating & review system
+│   └── models.py              # Review data models
+├── 📂 users/                   # User management & authentication
+│   ├── auth.py                # Password hashing & validation
+│   └── models.py              # User data models
+├── 📂 utils/                   # Helper utilities
+│   ├── database.py            # Database initialization & setup
+│   ├── image_loader.py        # Image loading utilities
+│   ├── logger.py              # Logging configuration
+│   └── validation.py          # Input validation functions
+├── gui_app.py                 # 🚀 Main GUI application (start here!)
+├── gui_Light.py               # UI theme & styling constants
+├── main.py                    # CLI version (for the retro feel)
+├── requirements.txt           # Dependencies (the essentials)
+└── README.md                  # You're reading this! 📖
 
 ```
 
