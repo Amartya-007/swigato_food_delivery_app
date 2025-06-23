@@ -107,7 +107,7 @@ class App(ctk.CTk):
             app_ref=self,  # Pass self (the App instance) as app_ref
             user=self.current_user,
             restaurant=restaurant,
-            show_cart_callback=self.show_cart_screen
+            show_cart_callback=self.show_main_app_cart
         )
         return self.menu_screen_instance
 
@@ -325,6 +325,20 @@ class App(ctk.CTk):
             self.admin_dashboard_instance = None
         self.show_login_screen()
         log(f"INFO: Logout complete. Showing login screen.")
+
+    def show_main_app_cart(self):
+        """Navigate to main app screen and show the cart tab"""
+        if not self.current_user:
+            print("Error: User not logged in. Cannot show cart.")
+            self.show_login_screen()
+            return
+        
+        # Switch to main app screen
+        self.show_main_app_screen(self.current_user)
+        
+        # Navigate to cart tab in the bottom navigation
+        if self.current_screen_frame and hasattr(self.current_screen_frame, 'handle_nav_click'):
+            self.current_screen_frame.handle_nav_click('cart')
 
     def run(self):
         self.mainloop()

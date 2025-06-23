@@ -3,19 +3,26 @@ import os
 
 PRIMARY_COLOR = "#FF5722"      # Swiggy Orange
 SECONDARY_COLOR = "#D32F2F"    # Zomato Red
-BACKGROUND_COLOR = "#FFF5F0"   # Light Cream/Peach
+BACKGROUND_COLOR = "#F8FAFC"   # Modern Light Background (Slightly bluer, more modern)
 FRAME_FG_COLOR = "#FFFFFF"     # Card/Section Background
-FRAME_BORDER_COLOR = "#FFCCBC" # Light Orange border
-ENTRY_BG_COLOR = "#FBE9E7"     # Pale Orange (Input field)
-TEXT_COLOR = "#212121"         # Dark Charcoal
+FRAME_BORDER_COLOR = "#E2E8F0" # Modern Light Border (Subtle gray-blue)
+ENTRY_BG_COLOR = "#F1F5F9"     # Modern Input Background
+TEXT_COLOR = "#1E293B"         # Modern Dark Text (Slate)
 BUTTON_TEXT_COLOR = "#FFFFFF"  # White text on buttons
 BUTTON_MAIN_BG_COLOR = PRIMARY_COLOR # Main background for buttons
-BUTTON_HOVER_COLOR = "#C62828" # Dark Zomato Red
-SUCCESS_COLOR = "#43A047"      # Fresh Green
-ERROR_COLOR = "#E53935"        # Alert Red
-DISABLED_BUTTON_COLOR = "#B0BEC5" # Cool Grey
+BUTTON_HOVER_COLOR = "#E2470D" # Modern Orange Hover
+SUCCESS_COLOR = "#10B981"      # Modern Green (Emerald)
+ERROR_COLOR = "#EF4444"        # Modern Red
+DISABLED_BUTTON_COLOR = "#94A3B8" # Modern Disabled (Slate)
 
-GRAY_TEXT_COLOR = "#888888"  # For muted/secondary text
+GRAY_TEXT_COLOR = "#64748B"    # Modern Muted Text (Slate-500)
+ACCENT_COLOR = "#8B5CF6"       # Modern Purple Accent
+CARD_SHADOW_COLOR = "#0F172A10" # Subtle shadow for cards
+GLASS_BG_COLOR = "#FFFFFF80"   # Semi-transparent white for glassmorphism
+LIGHT_ORANGE_BG = "#FFF4F0"    # Light orange background for tags
+LIGHT_PURPLE_BG = "#F3F4F6"    # Light purple/gray background
+HOVER_BG_COLOR = "#F1F5F9"     # Light hover background
+MODERN_BORDER = "#E5E7EB"      # Modern subtle border color
 SEMI_TRANSPARENT_OVERLAY = "black"  # Use solid black for overlay (Tkinter does not support alpha)
 CLOSE_BUTTON_BG = "#EEEEEE"  # For close button background
 CLOSE_BUTTON_TEXT = "#333333"  # For close button text
