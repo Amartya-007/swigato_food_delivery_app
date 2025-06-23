@@ -101,7 +101,7 @@ class AdminOrdersScreen(ctk.CTkFrame):
                          text_color=ADMIN_TEXT_COLOR).pack(expand=True, anchor="center", padx=20, pady=20)
             return
 
-        cell_font = (FONT_FAMILY, BODY_FONT_SIZE - 1)
+        cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE - 1)
         # Use a scrollable frame for order history (not for active orders, which are usually fewer)
         if not active_only:
             scroll_frame = ctk.CTkScrollableFrame(self.table_frame, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
