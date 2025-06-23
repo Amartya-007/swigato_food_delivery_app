@@ -1,4 +1,5 @@
 import logging
+import os
 
 PRIMARY_COLOR = "#FF5722"      # Swiggy Orange
 SECONDARY_COLOR = "#D32F2F"    # Zomato Red
@@ -52,18 +53,21 @@ ADMIN_BUTTON_FG_COLOR = "#007BFF"       # Primary blue for buttons
 ADMIN_BUTTON_HOVER_COLOR = "#0056b3"    # Darker blue for hover
 ADMIN_BUTTON_TEXT_COLOR = "#FFFFFF"     # White text for buttons
 
-ICON_PATH = "swigato_icon.ico"
+ICON_PATH = os.path.join("assets", "swigato_icon.ico")
 
 def set_swigato_icon(window):
     """Set the Swigato brand icon on a Tkinter/CTk window, with error handling."""
-    from gui_Light import ICON_PATH
     if hasattr(window, 'iconbitmap'):
         try:
             import os
-            if os.path.exists(ICON_PATH):
-                window.iconbitmap(ICON_PATH)
+            # Get the project root directory (assuming gui_Light.py is in the root)
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            icon_path = os.path.join(current_dir, "assets", "swigato_icon.ico")
+            
+            if os.path.exists(icon_path):
+                window.iconbitmap(icon_path)
             else:
-                logging.warning(f"Swigato icon file not found at {ICON_PATH}.")
+                logging.warning(f"Swigato icon file not found at {icon_path}.")
         except Exception as e:
             logging.error(f"Failed to set Swigato icon: {e}")
     else:

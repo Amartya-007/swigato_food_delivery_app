@@ -67,6 +67,7 @@ def select_restaurant_and_actions(all_restaurants):
             validation_type="integer",
             options={"min_val": 0, "max_val": len(all_restaurants)}
         )
+        assert choice_str is not None  # Never None when optional=False
         choice_num = int(choice_str)
 
         if choice_num == 0:
@@ -107,6 +108,7 @@ def handle_add_review(restaurant: Restaurant):
         validation_type="integer",
         options={"min_val": 1, "max_val": 5}
     )
+    assert rating_str is not None  # Never None when optional=False
     rating = int(rating_str)
     
     comment = console.input("Enter your comment (optional): ")
@@ -157,7 +159,9 @@ def handle_menu_actions(restaurant):
             validation_type="regex",  # Changed from "custom" to "regex"
             custom_error_message="Invalid input. Please enter a valid item ID, 'v', 'b', or '0'.", # Changed error_message to custom_error_message
             options={"pattern": r"^(v|b|0|[1-9][0-9]*)$"}  # Regex for v, b, 0, or positive integer
-        ).lower()
+        )
+        assert action is not None  # Never None when optional=False
+        action = action.lower()
 
         if action is None:  # User failed validation multiple times
             continue
@@ -188,6 +192,7 @@ def handle_menu_actions(restaurant):
                 default_value="1"
             )
             # quantity_str will be default_value if user presses Enter, or their input
+            assert quantity_str is not None  # default_value is "1", so never None
             quantity = int(quantity_str) 
 
             add_item_to_cart(active_cart, selected_item, quantity)
@@ -423,6 +428,7 @@ def run_app():
                     validation_type="integer",
                     options={"min_val": 1}
                 )
+                assert order_id_input is not None  # Never None when optional=False
                 order_id_to_track = int(order_id_input)
                 order_object = get_order_by_id(order_id_to_track)
                 if order_object:

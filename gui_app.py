@@ -35,9 +35,9 @@ class App(ctk.CTk):
         self.project_root = os.path.dirname(os.path.abspath(__file__))
 
         ctk.set_appearance_mode("Dark")
-
+        
         # Set window icon
-        icon_path = os.path.join(self.project_root, "swigato_icon.ico")  # Use self.project_root
+        icon_path = os.path.join(self.project_root, "assets", "swigato_icon.ico")  # Fixed path
         try:
             self.iconbitmap(icon_path)
         except Exception as e:
@@ -144,12 +144,12 @@ class App(ctk.CTk):
         
         self.current_screen_frame.pack(fill="both", expand=True)
         self._set_window_properties(title, width, height)
-
+        
         # If the current screen is AdminDashboard, and it has refresh_data, call it.
         if isinstance(self.current_screen_frame, AdminDashboard):
             if hasattr(self.current_screen_frame, 'refresh_data') and callable(getattr(self.current_screen_frame, 'refresh_data')):
                 log("INFO: AdminDashboard is packed and current. Calling refresh_data().")
-                self.current_screen_frame.refresh_data()
+                self.current_screen_frame.refresh_data()  # type: ignore[attr-defined]
             else:
                 log("WARNING: AdminDashboard instance does not have a callable refresh_data method.")
 
