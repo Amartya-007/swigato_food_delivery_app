@@ -25,15 +25,15 @@ class MainAppScreen(ctk.CTkFrame):
         header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
         header_frame.grid_columnconfigure(0, weight=1) # Welcome message
         header_frame.grid_columnconfigure(1, weight=0) # Spacer
-        header_frame.grid_columnconfigure(2, weight=0) # Top-right buttons frame
+        header_frame.grid_columnconfigure(2, weight=0) # Admin Panel (if admin)
+        header_frame.grid_columnconfigure(3, weight=0) # Theme button
 
         welcome_text = f"Welcome, {self.user.username}!"
         self.welcome_label = ctk.CTkLabel(header_frame, text=welcome_text,
                                           text_color=PRIMARY_COLOR,
                                           font=ctk.CTkFont(size=20, weight="bold"))
         self.welcome_label.grid(row=0, column=0, sticky="w")
-        
-        # Admin Panel button (if admin) - keep in header
+          # Admin Panel button (if admin) - keep in header
         if hasattr(self.user, "is_admin") and self.user.is_admin:
             admin_panel_button = ctk.CTkButton(
                 header_frame,
@@ -44,7 +44,26 @@ class MainAppScreen(ctk.CTkFrame):
                 font=ctk.CTkFont(size=14, weight="bold"),  # Added explicit size 14
                 command=lambda: self.app_ref.show_admin_screen(self.user)
             )
-            admin_panel_button.grid(row=0, column=2, sticky="e")
+            admin_panel_button.grid(row=0, column=2, sticky="e", padx=(0, 10))
+            
+        # Theme Toggle Button in top-right corner
+        theme_btn = ctk.CTkButton(
+            header_frame,
+            text="🌙",
+            width=50,
+            height=35,
+            fg_color="transparent",
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color=PRIMARY_COLOR,
+            font=ctk.CTkFont(size=20),
+            border_width=1,
+            border_color=FRAME_BORDER_COLOR,
+            corner_radius=8,
+            command=self.toggle_theme
+        )
+        # Position theme button at far right, or next to admin button if admin
+        theme_col = 3 if hasattr(self.user, "is_admin") and self.user.is_admin else 2
+        theme_btn.grid(row=0, column=theme_col, sticky="e")
         
         # --- Main Content Area ---
         self.main_content_frame = ctk.CTkFrame(self, fg_color=BACKGROUND_COLOR)
@@ -56,9 +75,7 @@ class MainAppScreen(ctk.CTkFrame):
         self.setup_content_areas()
         
         # Show restaurants by default
-        self.show_restaurants_content()
-
-        # --- Bottom Navigation Bar ---
+        self.show_restaurants_content()        # --- Bottom Navigation Bar ---
         self.create_bottom_nav_bar()
 
     def create_bottom_nav_bar(self):
@@ -66,7 +83,12 @@ class MainAppScreen(ctk.CTkFrame):
         bottom_nav_frame = ctk.CTkFrame(self, fg_color=FRAME_FG_COLOR, height=80, corner_radius=12)
         bottom_nav_frame.grid(row=2, column=0, padx=20, pady=(10, 10), sticky="ew")
         bottom_nav_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)  # Equal spacing for 6 columns
-        bottom_nav_frame.pack_propagate(False)        # Icon button style
+        bottom_nav_frame.pack_propagate(False)
+        
+        # Store navigation buttons for state management
+        self.nav_buttons = {}
+        
+        # Icon button style (default/inactive state)
         button_style = {
             "width": 80,
             "height": 50,
@@ -76,49 +98,73 @@ class MainAppScreen(ctk.CTkFrame):
             "font": ctk.CTkFont(size=28),  # Increased from 24 to 28
             "border_width": 0
         }
+        
+        # Active button style 
+        active_button_style = {
+            "width": 80,
+            "height": 50,
+            "fg_color": PRIMARY_COLOR,
+            "hover_color": BUTTON_HOVER_COLOR,
+            "text_color": "white",
+            "font": ctk.CTkFont(size=28),
+            "border_width": 0
+        }
 
         # Cart Button 🛒
         cart_btn = ctk.CTkButton(bottom_nav_frame, text="🛒", 
-                                command=self.show_cart_callback, **button_style)
-        cart_btn.grid(row=0, column=0, padx=10, pady=15)          # Create tooltip for cart
+                                command=lambda: self.handle_nav_click("cart"), **button_style)
+        cart_btn.grid(row=0, column=0, padx=10, pady=(15, 5), sticky="")
+        self.nav_buttons["cart"] = cart_btn
+        
+        # Create tooltip for cart
         cart_label = ctk.CTkLabel(bottom_nav_frame, text="Cart", 
-                                 font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)  # Increased from 10 to 12
-        cart_label.grid(row=1, column=0, pady=(0, 5))
+                                 font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        cart_label.grid(row=1, column=0, pady=(0, 5), sticky="")
 
         # Restaurants Button 🍽️
         restaurants_btn = ctk.CTkButton(bottom_nav_frame, text="🍽️", 
-                                      command=self.show_restaurants_content, **button_style)
-        restaurants_btn.grid(row=0, column=1, padx=10, pady=15)        
+                                      command=lambda: self.handle_nav_click("home"), **active_button_style)
+        restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5), sticky="")
+        self.nav_buttons["home"] = restaurants_btn
+        
         restaurants_label = ctk.CTkLabel(bottom_nav_frame, text="Home", 
-                                       font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)  # Increased from 10 to 12
-        restaurants_label.grid(row=1, column=1, pady=(0, 5))
+                                       font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        restaurants_label.grid(row=1, column=1, pady=(0, 5), sticky="")
 
         # Orders Button 📋 (only for non-admin)
         if not (hasattr(self.user, "is_admin") and self.user.is_admin):
             orders_btn = ctk.CTkButton(bottom_nav_frame, text="📋", 
-                                     command=self.show_orders_content, **button_style)
-            orders_btn.grid(row=0, column=2, padx=10, pady=15)            
+                                     command=lambda: self.handle_nav_click("orders"), **button_style)
+            orders_btn.grid(row=0, column=2, padx=10, pady=(15, 5), sticky="")
+            self.nav_buttons["orders"] = orders_btn
+            
             orders_label = ctk.CTkLabel(bottom_nav_frame, text="Orders", 
-                                       font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)  # Increased from 10 to 12
-            orders_label.grid(row=1, column=2, pady=(0, 5))
+                                       font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+            orders_label.grid(row=1, column=2, pady=(0, 5), sticky="")
 
         # Favorites Button ❤️
         favorites_btn = ctk.CTkButton(bottom_nav_frame, text="❤️", 
-                                    command=self.show_favorites_content, **button_style)
+                                    command=lambda: self.handle_nav_click("favorites"), **button_style)
         next_col = 3 if not (hasattr(self.user, "is_admin") and self.user.is_admin) else 2
-        favorites_btn.grid(row=0, column=next_col, padx=10, pady=15)        
+        favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
+        self.nav_buttons["favorites"] = favorites_btn
+        
         favorites_label = ctk.CTkLabel(bottom_nav_frame, text="Favorites", 
-                                     font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)  # Increased from 10 to 12
-        favorites_label.grid(row=1, column=next_col, pady=(0, 5))
-
-        # Theme Toggle Button 🌙
-        theme_btn = ctk.CTkButton(bottom_nav_frame, text="🌙", 
-                                command=self.toggle_theme, **button_style)
+                                     font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        favorites_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
+        
+        # Profile Button 👤
+        profile_btn = ctk.CTkButton(bottom_nav_frame, text="👤", 
+                                command=lambda: self.handle_nav_click("profile"), **button_style)
         next_col += 1
-        theme_btn.grid(row=0, column=next_col, padx=10, pady=15)        
-        theme_label = ctk.CTkLabel(bottom_nav_frame, text="Theme", 
-                                 font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)  # Increased from 10 to 12
-        theme_label.grid(row=1, column=next_col, pady=(0, 5))        # Logout Button (larger, different style)
+        profile_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
+        self.nav_buttons["profile"] = profile_btn
+        
+        profile_label = ctk.CTkLabel(bottom_nav_frame, text="Profile", 
+                                 font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
+        profile_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
+        
+        # Logout Button (larger, different style)
         logout_btn = ctk.CTkButton(bottom_nav_frame, text="Logout", 
                                   command=self.logout_callback,
                                   fg_color=SECONDARY_COLOR,
@@ -126,7 +172,48 @@ class MainAppScreen(ctk.CTkFrame):
                                   text_color=BUTTON_TEXT_COLOR,
                                   font=ctk.CTkFont(size=16, weight="bold"),  # Increased from 14 to 16
                                   width=100, height=45, corner_radius=8)
-        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15, sticky="e")
+        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15, sticky="")
+        
+        # Set current active tab
+        self.current_nav_tab = "home"
+
+    def handle_nav_click(self, tab_name):
+        """Handle navigation button clicks with proper state management"""
+        # Update button states
+        self.set_active_nav_tab(tab_name)
+        
+        # Handle the actual navigation
+        if tab_name == "cart":
+            self.show_cart_callback()
+        elif tab_name == "home":
+            self.show_restaurants_content()
+        elif tab_name == "orders":
+            self.show_orders_content()
+        elif tab_name == "favorites":
+            self.show_favorites_content()
+        elif tab_name == "profile":
+            self.show_profile_popup()
+    
+    def set_active_nav_tab(self, active_tab):
+        """Set the active navigation tab and update button styles"""
+        self.current_nav_tab = active_tab
+        
+        # Define styles
+        inactive_style = {
+            "fg_color": "transparent",
+            "text_color": PRIMARY_COLOR
+        }
+        active_style = {
+            "fg_color": PRIMARY_COLOR,
+            "text_color": "white"
+        }
+        
+        # Update all navigation buttons
+        for tab_name, button in self.nav_buttons.items():
+            if tab_name == active_tab:
+                button.configure(**active_style)
+            else:
+                button.configure(**inactive_style)
 
     def toggle_theme(self):
         """Toggle between light and dark theme (placeholder for now)"""
@@ -628,9 +715,7 @@ class MainAppScreen(ctk.CTkFrame):
             order_card = ctk.CTkFrame(self.orders_scroll_frame, fg_color=BACKGROUND_COLOR, 
                                      border_width=1, border_color=FRAME_BORDER_COLOR, corner_radius=8)
             order_card.grid(row=i, column=0, pady=(0, 10), sticky="ew", padx=10)
-            order_card.grid_columnconfigure(0, weight=1)
-
-            # Order details
+            order_card.grid_columnconfigure(0, weight=1)            # Order details
             header_text = f"Order #{order.order_id} - {order.status}"
             ctk.CTkLabel(order_card, text=header_text, font=ctk.CTkFont(size=16, weight="bold"), 
                         text_color=PRIMARY_COLOR).pack(pady=(10, 5))
@@ -641,3 +726,289 @@ class MainAppScreen(ctk.CTkFrame):
             if hasattr(order, 'created_at'):
                 ctk.CTkLabel(order_card, text=f"Ordered: {order.created_at}", 
                            font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR).pack(pady=(2, 10))
+
+    def show_profile_popup(self):
+        """Show profile popup window with user data and options using CTkTabview"""
+        # Destroy any previous profile popup
+        if hasattr(self, 'profile_popup') and self.profile_popup and self.profile_popup.winfo_exists():
+            self.profile_popup.destroy()
+            
+        self.profile_popup = ctk.CTkToplevel(self)
+        self.profile_popup.title("User Profile")
+        self.profile_popup.geometry("550x650")
+        set_swigato_icon(self.profile_popup)
+        self.profile_popup.grab_set()
+        self.profile_popup.configure(fg_color=BACKGROUND_COLOR)
+        self.profile_popup.grid_columnconfigure(0, weight=1)
+        self.profile_popup.grid_rowconfigure(1, weight=1)
+
+        # Header with gradient-like effect
+        header_frame = ctk.CTkFrame(self.profile_popup, fg_color=PRIMARY_COLOR, height=80, corner_radius=0)
+        header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
+        header_frame.grid_columnconfigure(0, weight=1)
+        header_frame.pack_propagate(False)
+
+        header_label = ctk.CTkLabel(
+            header_frame,
+            text="👤 User Profile",
+            font=ctk.CTkFont(size=28, weight="bold"),
+            text_color="white"
+        )
+        header_label.grid(row=0, column=0, pady=20)        # Main TabView with proper theme colors
+        tabview = ctk.CTkTabview(
+            self.profile_popup, 
+            width=520, 
+            height=550, 
+            corner_radius=15,
+            fg_color=FRAME_FG_COLOR,
+            segmented_button_fg_color=BACKGROUND_COLOR,
+            segmented_button_selected_color=PRIMARY_COLOR,
+            segmented_button_selected_hover_color=BUTTON_HOVER_COLOR,
+            segmented_button_unselected_color=FRAME_FG_COLOR,
+            segmented_button_unselected_hover_color=FRAME_BORDER_COLOR,
+            text_color=TEXT_COLOR,
+            text_color_disabled=GRAY_TEXT_COLOR
+        )
+        tabview.grid(row=1, column=0, padx=15, pady=15, sticky="nsew")
+        
+        # Add tabs
+        tabview.add("Account Info")
+        tabview.add("Change Password")
+        tabview.add("Change Username")
+          # --- Account Info Tab ---
+        account_tab = tabview.tab("Account Info")
+        account_tab.grid_columnconfigure(0, weight=1)
+        account_tab.configure(fg_color=BACKGROUND_COLOR)
+        
+        # Account info section
+        info_frame = ctk.CTkFrame(account_tab, fg_color=FRAME_FG_COLOR, corner_radius=12, border_width=1, border_color=FRAME_BORDER_COLOR)
+        info_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        info_frame.grid_columnconfigure(1, weight=1)
+        
+        ctk.CTkLabel(info_frame, text="📋 Account Information", 
+                    font=ctk.CTkFont(size=20, weight="bold"), 
+                    text_color=PRIMARY_COLOR).grid(row=0, column=0, columnspan=2, pady=(15, 20))
+        
+        # Username row
+        ctk.CTkLabel(info_frame, text="Username:", 
+                    font=ctk.CTkFont(size=14, weight="bold"), 
+                    text_color=PRIMARY_COLOR).grid(row=1, column=0, sticky="w", padx=(15, 10), pady=8)
+        ctk.CTkLabel(info_frame, text=self.user.username, 
+                    font=ctk.CTkFont(size=14), 
+                    text_color=TEXT_COLOR).grid(row=1, column=1, sticky="w", padx=(0, 15), pady=8)
+
+        # Email row
+        email = getattr(self.user, 'email', 'N/A')
+        ctk.CTkLabel(info_frame, text="Email:", 
+                    font=ctk.CTkFont(size=14, weight="bold"), 
+                    text_color=PRIMARY_COLOR).grid(row=2, column=0, sticky="w", padx=(15, 10), pady=8)
+        ctk.CTkLabel(info_frame, text=email, 
+                    font=ctk.CTkFont(size=14), 
+                    text_color=TEXT_COLOR).grid(row=2, column=1, sticky="w", padx=(0, 15), pady=8)
+
+        # Address row
+        address = getattr(self.user, 'address', 'N/A')
+        ctk.CTkLabel(info_frame, text="Address:", 
+                    font=ctk.CTkFont(size=14, weight="bold"), 
+                    text_color=PRIMARY_COLOR).grid(row=3, column=0, sticky="w", padx=(15, 10), pady=(8, 15))
+        ctk.CTkLabel(info_frame, text=address, 
+                    font=ctk.CTkFont(size=14), 
+                    text_color=TEXT_COLOR).grid(row=3, column=1, sticky="w", padx=(0, 15), pady=(8, 15))
+        
+        # --- Change Password Tab ---
+        password_tab = tabview.tab("Change Password")
+        password_tab.grid_columnconfigure(0, weight=1)
+        password_tab.configure(fg_color=BACKGROUND_COLOR)
+        
+        password_frame = ctk.CTkFrame(password_tab, fg_color=FRAME_FG_COLOR, corner_radius=12, border_width=1, border_color=FRAME_BORDER_COLOR)
+        password_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        password_frame.grid_columnconfigure(0, weight=1)
+        
+        ctk.CTkLabel(password_frame, text="🔒 Change Password", 
+                    font=ctk.CTkFont(size=20, weight="bold"), 
+                    text_color=PRIMARY_COLOR).grid(row=0, column=0, pady=(20, 15))
+
+        # Password fields with modern styling and proper theme colors
+        self.old_password_entry = ctk.CTkEntry(password_frame, 
+                                             show="*", 
+                                             placeholder_text="Current Password", 
+                                             width=350, 
+                                             height=40,
+                                             font=ctk.CTkFont(size=14),
+                                             corner_radius=10,
+                                             fg_color=BACKGROUND_COLOR,
+                                             border_color=FRAME_BORDER_COLOR,
+                                             text_color=TEXT_COLOR,
+                                             placeholder_text_color=GRAY_TEXT_COLOR)
+        self.old_password_entry.grid(row=1, column=0, pady=(0, 15), padx=20, sticky="ew")
+
+        self.new_password_entry = ctk.CTkEntry(password_frame, 
+                                             show="*", 
+                                             placeholder_text="New Password", 
+                                             width=350, 
+                                             height=40,
+                                             font=ctk.CTkFont(size=14),
+                                             corner_radius=10,
+                                             fg_color=BACKGROUND_COLOR,
+                                             border_color=FRAME_BORDER_COLOR,
+                                             text_color=TEXT_COLOR,
+                                             placeholder_text_color=GRAY_TEXT_COLOR)
+        self.new_password_entry.grid(row=2, column=0, pady=(0, 15), padx=20, sticky="ew")
+
+        self.confirm_password_entry = ctk.CTkEntry(password_frame, 
+                                                 show="*", 
+                                                 placeholder_text="Confirm New Password", 
+                                                 width=350, 
+                                                 height=40,
+                                                 font=ctk.CTkFont(size=14),
+                                                 corner_radius=10,
+                                                 fg_color=BACKGROUND_COLOR,
+                                                 border_color=FRAME_BORDER_COLOR,
+                                                 text_color=TEXT_COLOR,
+                                                 placeholder_text_color=GRAY_TEXT_COLOR)
+        self.confirm_password_entry.grid(row=3, column=0, pady=(0, 15), padx=20, sticky="ew")
+
+        # Password message label
+        self.password_message = ctk.CTkLabel(password_frame, text="", 
+                                           font=ctk.CTkFont(size=12), 
+                                           text_color=SUCCESS_COLOR)
+        self.password_message.grid(row=4, column=0, pady=(0, 15))
+
+        # Change password button with modern styling
+        change_pw_btn = ctk.CTkButton(password_frame, 
+                                     text="🔐 Change Password", 
+                                     fg_color=PRIMARY_COLOR, 
+                                     hover_color=BUTTON_HOVER_COLOR, 
+                                     text_color="white", 
+                                     font=ctk.CTkFont(size=14, weight="bold"),
+                                     height=45,
+                                     corner_radius=10,
+                                     command=self.change_password_popup)
+        change_pw_btn.grid(row=5, column=0, pady=(0, 20), padx=20)
+        
+        # --- Change Username Tab ---
+        username_tab = tabview.tab("Change Username")
+        username_tab.grid_columnconfigure(0, weight=1)
+        username_tab.configure(fg_color=BACKGROUND_COLOR)
+        
+        username_frame = ctk.CTkFrame(username_tab, fg_color=FRAME_FG_COLOR, corner_radius=12, border_width=1, border_color=FRAME_BORDER_COLOR)
+        username_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        username_frame.grid_columnconfigure(0, weight=1)
+        
+        ctk.CTkLabel(username_frame, text="✏️ Change Username", 
+                    font=ctk.CTkFont(size=20, weight="bold"), 
+                    text_color=PRIMARY_COLOR).grid(row=0, column=0, pady=(20, 15))
+
+        # Username field with modern styling and proper theme colors
+        self.new_username_entry = ctk.CTkEntry(username_frame, 
+                                             placeholder_text="New Username", 
+                                             width=350, 
+                                             height=40,
+                                             font=ctk.CTkFont(size=14),
+                                             corner_radius=10,
+                                             fg_color=BACKGROUND_COLOR,
+                                             border_color=FRAME_BORDER_COLOR,
+                                             text_color=TEXT_COLOR,
+                                             placeholder_text_color=GRAY_TEXT_COLOR)
+        self.new_username_entry.grid(row=1, column=0, pady=(0, 15), padx=20, sticky="ew")
+
+        # Username message label
+        self.username_message = ctk.CTkLabel(username_frame, text="", 
+                                           font=ctk.CTkFont(size=12), 
+                                           text_color=SUCCESS_COLOR)
+        self.username_message.grid(row=2, column=0, pady=(0, 15))
+
+        # Change username button with modern styling
+        change_username_btn = ctk.CTkButton(username_frame, 
+                                           text="👤 Change Username", 
+                                           fg_color=PRIMARY_COLOR, 
+                                           hover_color=BUTTON_HOVER_COLOR, 
+                                           text_color="white", 
+                                           font=ctk.CTkFont(size=14, weight="bold"),
+                                           height=45,
+                                           corner_radius=10,
+                                           command=self.change_username_popup)
+        change_username_btn.grid(row=3, column=0, pady=(0, 20), padx=20)
+
+        # Close button at the bottom
+        close_btn = ctk.CTkButton(self.profile_popup, 
+                                 text="❌ Close", 
+                                 fg_color=ERROR_COLOR, 
+                                 hover_color=BUTTON_HOVER_COLOR, 
+                                 text_color="white", 
+                                 font=ctk.CTkFont(size=14, weight="bold"),
+                                 height=40,
+                                 width=120,
+                                 corner_radius=10,
+                                 command=self.profile_popup.destroy)
+        close_btn.grid(row=2, column=0, pady=(0, 15))
+
+    def change_password_popup(self):
+        """Handle password change from popup"""
+        old = self.old_password_entry.get()
+        new = self.new_password_entry.get()
+        confirm = self.confirm_password_entry.get()
+        
+        if not old or not new or not confirm:
+            self.password_message.configure(text="All fields are required.", text_color=ERROR_COLOR)
+            return
+            
+        if new != confirm:
+            self.password_message.configure(text="New passwords do not match.", text_color=ERROR_COLOR)
+            return
+            
+        if not self.user.verify_password(old):
+            self.password_message.configure(text="Current password is incorrect.", text_color=ERROR_COLOR)
+            return
+            
+        # Attempt to update password
+        try:
+            success = self.user.update_password(new)
+            if success:
+                self.password_message.configure(text="Password changed successfully!", text_color=SUCCESS_COLOR)
+                # Clear fields
+                self.old_password_entry.delete(0, 'end')
+                self.new_password_entry.delete(0, 'end')
+                self.confirm_password_entry.delete(0, 'end')
+            else:
+                self.password_message.configure(text="Failed to change password.", text_color=ERROR_COLOR)
+        except Exception as e:
+            self.password_message.configure(text=f"Error: {str(e)}", text_color=ERROR_COLOR)
+
+    def change_username_popup(self):
+        """Handle username change from popup"""
+        new_username = self.new_username_entry.get().strip()
+        
+        if not new_username:
+            self.username_message.configure(text="Username cannot be empty.", text_color=ERROR_COLOR)
+            return
+            
+        if new_username == self.user.username:
+            self.username_message.configure(text="New username is the same as current.", text_color=ERROR_COLOR)
+            return
+            
+        # Attempt to update username
+        try:
+            # Check if username is already taken
+            from users.models import User
+            existing_user = User.get_by_username(new_username)
+            if existing_user:
+                self.username_message.configure(text="Username already exists.", text_color=ERROR_COLOR)
+                return
+                
+            # Update username
+            old_username = self.user.username
+            self.user.username = new_username
+            success = self.user.save()  # Assuming there's a save method
+            
+            if success:
+                self.username_message.configure(text="Username changed successfully!", text_color=SUCCESS_COLOR)
+                # Update welcome label
+                self.welcome_label.configure(text=f"Welcome, {self.user.username}!")
+                # Clear field
+                self.new_username_entry.delete(0, 'end')
+            else:
+                self.user.username = old_username  # Revert on failure
+                self.username_message.configure(text="Failed to change username.", text_color=ERROR_COLOR)
+        except Exception as e:
+            self.username_message.configure(text=f"Error: {str(e)}", text_color=ERROR_COLOR)
