@@ -65,7 +65,29 @@ def set_swigato_icon(window):
             icon_path = os.path.join(current_dir, "assets", "swigato_icon.ico")
             
             if os.path.exists(icon_path):
-                window.iconbitmap(icon_path)
+                def apply_icon():
+                    try:
+                        if window.winfo_exists():
+                            window.iconbitmap(icon_path)
+                    except:
+                        pass
+                
+                # Set icon immediately
+                apply_icon()
+                # Set icon multiple times with increasing delays to override CTK
+                for delay in [10, 50, 100, 200, 500, 1000]:
+                    window.after(delay, apply_icon)
+                    
+                # Also set up a periodic check to maintain the icon
+                def maintain_icon():
+                    try:
+                        if window.winfo_exists():
+                            window.iconbitmap(icon_path)
+                            window.after(2000, maintain_icon)  # Check every 2 seconds
+                    except:
+                        pass
+                
+                window.after(1500, maintain_icon)  # Start maintaining after 1.5 seconds
             else:
                 logging.warning(f"Swigato icon file not found at {icon_path}.")
         except Exception as e:
