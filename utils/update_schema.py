@@ -15,7 +15,7 @@ def add_image_filename_columns():
     Adds the image_filename column to the restaurants and menu_items tables
     if they don't already exist.
     """
-    db_path = "g:\\swigato_project\\data\\swigato.db" # Make sure this path is correct
+    db_path = "G:\\swigato_food_delivery_app\\data\\swigato.db" # Make sure this path is correct
     conn = None
     try:
         # conn = get_db_connection() # Assuming get_db_connection uses the correct path
