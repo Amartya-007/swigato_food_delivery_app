@@ -120,8 +120,9 @@ class MainAppScreen(ctk.CTkFrame):
         cart_label = ctk.CTkLabel(bottom_nav_frame, text="Cart", 
                                  font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
         cart_label.grid(row=1, column=0, pady=(0, 5))
-          # Restaurants Button 🍽️
-        restaurants_btn = ctk.CTkButton(bottom_nav_frame, text="🍽️", 
+        
+        # Restaurants Button ⌂
+        restaurants_btn = ctk.CTkButton(bottom_nav_frame, text="⌂", 
                                       command=lambda: self.handle_nav_click("home"), **active_button_style)
         restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5))
         self.nav_buttons["home"] = restaurants_btn
@@ -139,10 +140,8 @@ class MainAppScreen(ctk.CTkFrame):
             
             orders_label = ctk.CTkLabel(bottom_nav_frame, text="Orders", 
                                        font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-            orders_label.grid(row=1, column=2, pady=(0, 5))
-
-        # Favorites Button ❤️
-        favorites_btn = ctk.CTkButton(bottom_nav_frame, text="❤️", 
+            orders_label.grid(row=1, column=2, pady=(0, 5))        # Favorites Button ★
+        favorites_btn = ctk.CTkButton(bottom_nav_frame, text="★", 
                                     command=lambda: self.handle_nav_click("favorites"), **button_style)
         next_col = 3 if not (hasattr(self.user, "is_admin") and self.user.is_admin) else 2
         favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5))
@@ -1087,9 +1086,9 @@ class MainAppScreen(ctk.CTkFrame):
 
         total_price = cart.get_total_price()
         total_label = ctk.CTkLabel(
-            checkout_frame, 
-            text=f"Total: ₹{total_price:.2f}", 
-            font=ctk.CTkFont(size=18, weight="bold"), 
+            checkout_frame,
+            text=f"Total: ₹{total_price:.2f}",
+            font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
         total_label.grid(row=0, column=0, padx=15, pady=15, sticky="w")
