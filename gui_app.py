@@ -230,7 +230,7 @@ class App(ctk.CTk):
             self.show_main_app_screen(self.current_user)
             return
 
-        self._switch_screen(self._create_cart_screen, title=f"Swigato - {self.current_user.username}'s Cart", width=800, height=600)
+        self._switch_screen(self._create_cart_screen, title=f"Swigato - {self.current_user.username}'s Cart", width=900, height=700)
         if self.current_screen_frame and hasattr(self.current_screen_frame, 'load_cart_items'):
             self.current_screen_frame.load_cart_items()
 
