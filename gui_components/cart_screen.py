@@ -264,48 +264,48 @@ class CartScreen(ctk.CTkFrame):
         cart_btn = ctk.CTkButton(bottom_nav_frame, text="🛒", 
                                 command=lambda: None,  # Cart is already active
                                 **active_button_style)
-        cart_btn.grid(row=0, column=0, padx=10, pady=(15, 5), sticky="")
+        cart_btn.grid(row=0, column=0, padx=10, pady=(15, 5))
         
         cart_label = ctk.CTkLabel(bottom_nav_frame, text="Cart", 
                                  font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        cart_label.grid(row=1, column=0, pady=(0, 5), sticky="")
+        cart_label.grid(row=1, column=0, pady=(0, 5))
 
         # Restaurants Button 🍽️
         restaurants_btn = ctk.CTkButton(bottom_nav_frame, text="🍽️", 
                                       command=self.go_home, **button_style)
-        restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5), sticky="")
+        restaurants_btn.grid(row=0, column=1, padx=10, pady=(15, 5))
         
         restaurants_label = ctk.CTkLabel(bottom_nav_frame, text="Home", 
                                        font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        restaurants_label.grid(row=1, column=1, pady=(0, 5), sticky="")# Orders Button 📋 (only for non-admin)
+        restaurants_label.grid(row=1, column=1, pady=(0, 5))        # Orders Button 📋 (only for non-admin)
         if not (hasattr(self.user, "is_admin") and self.user.is_admin):
             orders_btn = ctk.CTkButton(bottom_nav_frame, text="📋", 
                                      command=self.show_orders, **button_style)
-            orders_btn.grid(row=0, column=2, padx=10, pady=(15, 5), sticky="")
+            orders_btn.grid(row=0, column=2, padx=10, pady=(15, 5))
             
             orders_label = ctk.CTkLabel(bottom_nav_frame, text="Orders", 
                                        font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-            orders_label.grid(row=1, column=2, pady=(0, 5), sticky="")
+            orders_label.grid(row=1, column=2, pady=(0, 5))
 
         # Favorites Button ❤️
         favorites_btn = ctk.CTkButton(bottom_nav_frame, text="❤️", 
                                     command=self.show_favorites, **button_style)
         next_col = 3 if not (hasattr(self.user, "is_admin") and self.user.is_admin) else 2
-        favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
+        favorites_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5))
         
         favorites_label = ctk.CTkLabel(bottom_nav_frame, text="Favorites", 
                                      font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        favorites_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
-
+        favorites_label.grid(row=1, column=next_col, pady=(0, 5))
+        
         # Profile Button 👤
         profile_btn = ctk.CTkButton(bottom_nav_frame, text="👤", 
                                    command=self.show_profile, **button_style)
         next_col += 1
-        profile_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5), sticky="")
+        profile_btn.grid(row=0, column=next_col, padx=10, pady=(15, 5))
         
         profile_label = ctk.CTkLabel(bottom_nav_frame, text="Profile", 
                                     font=ctk.CTkFont(size=12), text_color=GRAY_TEXT_COLOR)
-        profile_label.grid(row=1, column=next_col, pady=(0, 5), sticky="")
+        profile_label.grid(row=1, column=next_col, pady=(0, 5))
         
         # Logout Button (larger, different style)
         logout_btn = ctk.CTkButton(bottom_nav_frame, text="Logout", 
@@ -315,7 +315,7 @@ class CartScreen(ctk.CTkFrame):
                                   text_color=BUTTON_TEXT_COLOR,
                                   font=ctk.CTkFont(size=16, weight="bold"),  # Increased from 14 to 16
                                   width=100, height=45, corner_radius=8)
-        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15, sticky="")
+        logout_btn.grid(row=0, column=5, rowspan=2, padx=20, pady=15)
 
     def go_home(self):
         """Navigate back to the main app/restaurant list"""
