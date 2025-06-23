@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import os
 from PIL import Image, ImageTk
-from gui_Light import BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, SEMI_TRANSPARENT_OVERLAY, CLOSE_BUTTON_BG, CLOSE_BUTTON_TEXT, ERROR_COLOR, BUTTON_TEXT_COLOR, ACCENT_COLOR, CARD_SHADOW_COLOR, GLASS_BG_COLOR, LIGHT_ORANGE_BG, LIGHT_PURPLE_BG, HOVER_BG_COLOR, MODERN_BORDER, set_swigato_icon, ENTRY_BG_COLOR
+from gui_Light import BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, SEMI_TRANSPARENT_OVERLAY, CLOSE_BUTTON_BG, CLOSE_BUTTON_TEXT, ERROR_COLOR, BUTTON_TEXT_COLOR, CARD_SHADOW_COLOR, GLASS_BG_COLOR, LIGHT_ORANGE_BG, LIGHT_PURPLE_BG, HOVER_BG_COLOR, MODERN_BORDER, set_swigato_icon, ENTRY_BG_COLOR
 from utils.image_loader import load_image
 from utils.logger import log
 from orders.models import get_orders_by_user_id
@@ -33,25 +33,28 @@ class MainAppScreen(ctk.CTkFrame):
                                           text_color=TEXT_COLOR,
                                           font=ctk.CTkFont(size=26, weight="bold"))
         self.welcome_label.grid(row=0, column=0, sticky="w")
-        
-        # Subtitle for better hierarchy
+          # Subtitle for better hierarchy
         subtitle_label = ctk.CTkLabel(header_frame, text="Discover amazing restaurants near you",
                                      text_color=GRAY_TEXT_COLOR,
                                      font=ctk.CTkFont(size=14))
-        subtitle_label.grid(row=1, column=0, sticky="w", pady=(5, 0))          # Modern Admin Panel button (if admin)
+        subtitle_label.grid(row=1, column=0, sticky="w", pady=(5, 0))
+        
+        # Modern Admin Panel button (if admin)
         if hasattr(self.user, "is_admin") and self.user.is_admin:
             admin_panel_button = ctk.CTkButton(
                 header_frame,
                 text="⚙️ Admin Panel",
-                fg_color=ACCENT_COLOR,
-                hover_color="#7C3AED",
+                fg_color=PRIMARY_COLOR,
+                hover_color=BUTTON_HOVER_COLOR,
                 text_color="white",
                 font=ctk.CTkFont(size=14, weight="bold"),
                 corner_radius=12,
                 height=40,
                 command=lambda: self.app_ref.show_admin_screen(self.user)
             )
-            admin_panel_button.grid(row=0, column=2, sticky="e", padx=(0, 15))        # Modern Profile button (now rightmost in header, more prominent)
+            admin_panel_button.grid(row=0, column=2, sticky="e", padx=(0, 15))
+        
+        # Modern Profile button (now rightmost in header, more prominent)
         profile_btn = ctk.CTkButton(
             header_frame,
             text="👤 Profile",
@@ -1169,7 +1172,7 @@ class MainAppScreen(ctk.CTkFrame):
                     top_frame,
                     text=f"₹{item_total:.2f}",
                     font=ctk.CTkFont(size=16, weight="bold"),
-                    text_color=ACCENT_COLOR,
+                    text_color=PRIMARY_COLOR,
                     anchor="e"
                 )
                 item_total_label.grid(row=0, column=1, sticky="e")
@@ -1266,16 +1269,15 @@ class MainAppScreen(ctk.CTkFrame):
                 total_frame,
                 text=f"₹{total_amount:.2f}",
                 font=ctk.CTkFont(size=20, weight="bold"),
-                text_color=ACCENT_COLOR
+                text_color=PRIMARY_COLOR
             ).grid(row=0, column=1, sticky="e")
-            
-            # Modern gradient checkout button
+              # Modern gradient checkout button
             checkout_button = ctk.CTkButton(
                 self.cart_scroll_frame,
                 text="🛍️ Proceed to Checkout",
                 command=self.handle_checkout,
-                fg_color=ACCENT_COLOR,
-                hover_color="#7C3AED",
+                fg_color=PRIMARY_COLOR,
+                hover_color=BUTTON_HOVER_COLOR,
                 text_color="white",
                 font=ctk.CTkFont(size=16, weight="bold"),
                 height=56,
@@ -1325,9 +1327,8 @@ class MainAppScreen(ctk.CTkFrame):
             browse_button = ctk.CTkButton(
                 empty_frame,
                 text="🍽️ Browse Restaurants",
-                command=lambda: self.show_restaurants_content(),
-                fg_color=ACCENT_COLOR,
-                hover_color="#7C3AED",
+                command=lambda: self.show_restaurants_content(),                fg_color=PRIMARY_COLOR,
+                hover_color=BUTTON_HOVER_COLOR,
                 text_color="white",
                 font=ctk.CTkFont(size=16, weight="bold"),
                 height=48,
