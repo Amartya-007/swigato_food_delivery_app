@@ -3,7 +3,7 @@ from PIL import Image, ImageTk
 from gui_Light import (
     BACKGROUND_COLOR, FRAME_FG_COLOR, FRAME_BORDER_COLOR, PRIMARY_COLOR,
     BUTTON_HOVER_COLOR, TEXT_COLOR, SUCCESS_COLOR, ERROR_COLOR, BUTTON_TEXT_COLOR,
-    GRAY_TEXT_COLOR, SECONDARY_COLOR
+    GRAY_TEXT_COLOR, SECONDARY_COLOR, ACCENT_COLOR
 )
 from utils.image_loader import load_image
 from cart.models import CartItem

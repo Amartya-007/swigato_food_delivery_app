@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import os
 from PIL import Image
-from gui_Light import BACKGROUND_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, SUCCESS_COLOR, ERROR_COLOR
+from gui_Light import BACKGROUND_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, SUCCESS_COLOR, ERROR_COLOR, GRAY_TEXT_COLOR, ACCENT_COLOR, MODERN_BORDER, HOVER_BG_COLOR
 from restaurants.models import MenuItem
 from utils.image_loader import load_image
 from utils.logger import log
@@ -18,7 +18,7 @@ class MenuScreen(ctk.CTkFrame):
         self.show_cart_callback = show_cart_callback
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=0)  # Header Frame
+        self.grid_rowconfigure(0, weight=0)  # Modern Header Frame
         self.grid_rowconfigure(1, weight=1)  # Main Scrollable Frame
         self.grid_rowconfigure(2, weight=0)  # Status Label
 
@@ -30,49 +30,94 @@ class MenuScreen(ctk.CTkFrame):
         self.write_review_button_widget = None
         self.inline_review_form_actual_frame = None
 
-        # --- Header Frame ---
-        header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
-        header_frame.grid_columnconfigure(0, weight=0)
-        header_frame.grid_columnconfigure(1, weight=1)
-        header_frame.grid_columnconfigure(2, weight=0)
-
-        back_button = ctk.CTkButton(header_frame, text="< Back to Restaurants",
-                                    command=self.go_back_to_main_app,
-                                    fg_color=SECONDARY_COLOR, text_color=TEXT_COLOR,
-                                    hover_color=BUTTON_HOVER_COLOR,
-                                    font=ctk.CTkFont(weight="bold"))
-        back_button.grid(row=0, column=0, rowspan=2, sticky="w")
-
-        restaurant_name_text = self.restaurant.name if self.restaurant else "Menu"
-        restaurant_name_label = ctk.CTkLabel(header_frame, text=restaurant_name_text,
-                                             text_color=PRIMARY_COLOR,
-                                             font=ctk.CTkFont(size=24, weight="bold"))
-        restaurant_name_label.grid(row=0, column=1, padx=(20, 0), sticky="w")
-
-        if self.restaurant and hasattr(self.restaurant, 'description') and self.restaurant.description:
-            restaurant_desc_label = ctk.CTkLabel(header_frame, text=self.restaurant.description,
-                                                 text_color=TEXT_COLOR,
-                                                 font=ctk.CTkFont(size=12),
-                                                 wraplength=400, anchor="w")
-            restaurant_desc_label.grid(row=1, column=1, padx=(20, 0), pady=(0, 5), sticky="w")
-
-        view_cart_button = ctk.CTkButton(header_frame, text="View Cart",
-                                         command=self.show_cart_callback,
-                                         fg_color=SUCCESS_COLOR, hover_color=BUTTON_HOVER_COLOR,
-                                         text_color=TEXT_COLOR, font=ctk.CTkFont(weight="bold"))
-        view_cart_button.grid(row=0, column=2, rowspan=2, padx=(10, 0), sticky="e")
-
+        # --- Modern Header Frame with Enhanced Styling ---
+        self._create_modern_header()
+        
         # --- Main Scrollable Frame ---
-        self.main_scroll_frame = ctk.CTkScrollableFrame(self, fg_color=BACKGROUND_COLOR, border_width=0)
-        self.main_scroll_frame.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        self.main_scroll_frame = ctk.CTkScrollableFrame(
+            self, 
+            fg_color=BACKGROUND_COLOR, 
+            border_width=0,
+            corner_radius=0
+        )
+        self.main_scroll_frame.grid(row=1, column=0, padx=20, pady=(10, 20), sticky="nsew")
         self.main_scroll_frame.grid_columnconfigure(0, weight=1)
         
         self._populate_main_scroll_content()
 
-        # --- Status Label ---
-        self.status_label = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=12), text_color=SUCCESS_COLOR)
-        self.status_label.grid(row=2, column=0, pady=(5, 10), sticky="ew")
+        # --- Modern Status Label ---
+        self.status_label = ctk.CTkLabel(
+            self, 
+            text="", 
+            font=ctk.CTkFont(size=14, weight="bold"), 
+            text_color=SUCCESS_COLOR
+        )
+        self.status_label.grid(row=2, column=0, pady=(0, 15), sticky="ew")
+
+    def _create_modern_header(self):
+        """Create a modern, elegant header with better visual hierarchy"""
+        header_frame = ctk.CTkFrame(
+            self, 
+            fg_color=FRAME_FG_COLOR,
+            corner_radius=20,
+            border_width=1,
+            border_color=MODERN_BORDER
+        )
+        header_frame.grid(row=0, column=0, padx=20, pady=(20, 0), sticky="ew")
+        header_frame.grid_columnconfigure(1, weight=1)
+
+        # Modern back button
+        back_button = ctk.CTkButton(
+            header_frame, 
+            text="← Back",
+            command=self.go_back_to_main_app,
+            fg_color="transparent",
+            text_color=GRAY_TEXT_COLOR,
+            hover_color=HOVER_BG_COLOR,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=80,
+            height=36,
+            corner_radius=12
+        )
+        back_button.grid(row=0, column=0, padx=20, pady=15, sticky="w")
+
+        # Restaurant info section
+        info_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        info_frame.grid(row=0, column=1, padx=20, pady=15, sticky="w")
+        
+        restaurant_name_text = self.restaurant.name if self.restaurant else "Menu"
+        restaurant_name_label = ctk.CTkLabel(
+            info_frame, 
+            text=restaurant_name_text,
+            text_color=TEXT_COLOR,
+            font=ctk.CTkFont(size=24, weight="bold")
+        )
+        restaurant_name_label.pack(anchor="w")
+
+        if self.restaurant and hasattr(self.restaurant, 'description') and self.restaurant.description:
+            restaurant_desc_label = ctk.CTkLabel(
+                info_frame, 
+                text=self.restaurant.description,
+                text_color=GRAY_TEXT_COLOR,
+                font=ctk.CTkFont(size=14),
+                wraplength=400,
+                anchor="w"
+            )
+            restaurant_desc_label.pack(anchor="w", pady=(5, 0))
+
+        # Modern view cart button
+        view_cart_button = ctk.CTkButton(
+            header_frame, 
+            text="🛒 View Cart",
+            command=self.show_cart_callback,
+            fg_color=ACCENT_COLOR,
+            hover_color="#7C3AED",
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=40,
+            corner_radius=16
+        )
+        view_cart_button.grid(row=0, column=2, padx=20, pady=15, sticky="e")
 
     def _clear_main_scroll_content(self):
         for widget in self.main_scroll_frame.winfo_children():
@@ -92,93 +137,207 @@ class MenuScreen(ctk.CTkFrame):
         current_row = self._populate_reviews_to_scroll_frame(self.main_scroll_frame, current_row)
 
     def _populate_menu_items_to_scroll_frame(self, parent_frame, start_row):
+        """Create modern, beautiful food item cards with enhanced styling"""
         current_row = start_row
         log(f"_populate_menu_items_to_scroll_frame for restaurant: {self.restaurant.name if self.restaurant else 'None'}")
 
         if not self.restaurant:
-            no_restaurant_label = ctk.CTkLabel(parent_frame,
-                                               text="No restaurant selected or menu available.",
-                                               text_color=TEXT_COLOR, font=ctk.CTkFont(size=16))
-            no_restaurant_label.grid(row=current_row, column=0, pady=20, sticky="ew")
+            # Modern empty state
+            empty_frame = ctk.CTkFrame(
+                parent_frame,
+                fg_color=FRAME_FG_COLOR,
+                corner_radius=20,
+                border_width=1,
+                border_color=MODERN_BORDER
+            )
+            empty_frame.grid(row=current_row, column=0, pady=20, sticky="ew")
+            
+            no_restaurant_label = ctk.CTkLabel(
+                empty_frame,
+                text="🍽️ No restaurant selected",
+                text_color=GRAY_TEXT_COLOR,
+                font=ctk.CTkFont(size=18, weight="bold")
+            )
+            no_restaurant_label.pack(pady=40)
             return current_row + 1
 
         menu_items = self.restaurant.menu
         if not menu_items:
-            no_items_label = ctk.CTkLabel(parent_frame,
-                                          text="This restaurant's menu is currently empty.",
-                                          text_color=TEXT_COLOR, font=ctk.CTkFont(size=16))
-            no_items_label.grid(row=current_row, column=0, pady=20, sticky="ew")
+            # Modern empty menu state
+            empty_frame = ctk.CTkFrame(
+                parent_frame,
+                fg_color=FRAME_FG_COLOR,
+                corner_radius=20,
+                border_width=1,
+                border_color=MODERN_BORDER
+            )
+            empty_frame.grid(row=current_row, column=0, pady=20, sticky="ew")
+            
+            no_items_label = ctk.CTkLabel(
+                empty_frame,
+                text="📋 Menu coming soon!",
+                text_color=GRAY_TEXT_COLOR,
+                font=ctk.CTkFont(size=18, weight="bold")
+            )
+            no_items_label.pack(pady=40)
             return current_row + 1
 
+        # Categorize menu items
         categorized_menu = {}
         for item in menu_items:
             if item.category not in categorized_menu:
                 categorized_menu[item.category] = []
             categorized_menu[item.category].append(item)
 
+        # Display each category with modern styling
         for category, items_in_category in categorized_menu.items():
-            category_label = ctk.CTkLabel(parent_frame, text=category,
-                                          font=ctk.CTkFont(size=20, weight="bold"),
-                                          text_color=PRIMARY_COLOR)
-            category_label.grid(row=current_row, column=0, pady=(15, 5), sticky="w")
+            # Modern category header
+            category_container = ctk.CTkFrame(parent_frame, fg_color="transparent")
+            category_container.grid(row=current_row, column=0, pady=(30, 15), sticky="ew")
+            
+            category_label = ctk.CTkLabel(
+                category_container,
+                text=category,
+                font=ctk.CTkFont(size=22, weight="bold"),
+                text_color=TEXT_COLOR
+            )
+            category_label.pack(anchor="w")
+            
+            # Category underline
+            underline = ctk.CTkFrame(
+                category_container,
+                fg_color=ACCENT_COLOR,
+                height=3,
+                corner_radius=2
+            )
+            underline.pack(anchor="w", fill="x", pady=(5, 0))
+            
             current_row += 1
 
+            # Display items in this category
             for item in items_in_category:
-                item_card = ctk.CTkFrame(parent_frame, fg_color=FRAME_FG_COLOR,
-                                         border_color=FRAME_BORDER_COLOR, border_width=1, corner_radius=8)
-                item_card.grid(row=current_row, column=0, pady=(0, 10), sticky="ew")
-                item_card.grid_columnconfigure(0, weight=0)
+                # Modern food item card
+                item_card = ctk.CTkFrame(
+                    parent_frame,
+                    fg_color=FRAME_FG_COLOR,
+                    corner_radius=20,
+                    border_width=1,
+                    border_color=MODERN_BORDER
+                )
+                item_card.grid(row=current_row, column=0, pady=(0, 15), sticky="ew")
                 item_card.grid_columnconfigure(1, weight=1)
-                item_card.grid_columnconfigure(2, weight=0)
-                item_card.grid_columnconfigure(3, weight=0)
 
-                image_label = None
-                if item.image_filename:
-                    project_root = self.app_ref.project_root
-                    image_path = os.path.join(project_root, "assets", "menu_items", item.image_filename)
-                    ctk_image = load_image(image_path, size=(100, 100))
-                    if ctk_image:
-                        image_label = ctk.CTkLabel(item_card, image=ctk_image, text="")
-                        image_label.grid(row=0, column=0, rowspan=3, padx=10, pady=10, sticky="ns")
-                if not image_label:
-                    image_label = ctk.CTkLabel(item_card, text="No Image", width=100, height=100, fg_color="gray", text_color="white")
-                    image_label.grid(row=0, column=0, rowspan=3, padx=10, pady=10, sticky="ns")
+                # Food image
+                self._create_food_image(item_card, item)
 
+                # Item details section
                 details_frame = ctk.CTkFrame(item_card, fg_color="transparent")
-                details_frame.grid(row=0, column=1, rowspan=3, padx=(0, 10), pady=10, sticky="nsew")
+                details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
                 details_frame.grid_columnconfigure(0, weight=1)
 
-                item_name_label = ctk.CTkLabel(details_frame, text=item.name,
-                                               font=ctk.CTkFont(size=16, weight="bold"),
-                                               text_color=TEXT_COLOR, anchor="w")
-                item_name_label.grid(row=0, column=0, pady=(0, 2), sticky="ew")
+                # Item name
+                item_name_label = ctk.CTkLabel(
+                    details_frame,
+                    text=item.name,
+                    font=ctk.CTkFont(size=18, weight="bold"),
+                    text_color=TEXT_COLOR,
+                    anchor="w"
+                )
+                item_name_label.grid(row=0, column=0, sticky="ew", pady=(0, 5))
 
-                item_desc_label = ctk.CTkLabel(details_frame, text=item.description,
-                                               font=ctk.CTkFont(size=12), text_color=TEXT_COLOR,
-                                               wraplength=300, justify="left", anchor="w")
-                item_desc_label.grid(row=1, column=0, pady=(0, 5), sticky="ew")
+                # Item description
+                item_desc_label = ctk.CTkLabel(
+                    details_frame,
+                    text=item.description,
+                    font=ctk.CTkFont(size=14),
+                    text_color=GRAY_TEXT_COLOR,
+                    wraplength=350,
+                    justify="left",
+                    anchor="w"
+                )
+                item_desc_label.grid(row=1, column=0, sticky="ew", pady=(0, 10))
 
-                item_price_label = ctk.CTkLabel(details_frame, text=f"₹{item.price:.2f}",
-                                                font=ctk.CTkFont(size=14, weight="bold"),
-                                                text_color=SUCCESS_COLOR, anchor="w")
-                item_price_label.grid(row=2, column=0, pady=(0, 0), sticky="ew")
+                # Price and actions row
+                bottom_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
+                bottom_frame.grid(row=2, column=0, sticky="ew")
+                bottom_frame.grid_columnconfigure(0, weight=1)
 
-                # Heart/Favorite button for menu item
+                # Price
+                price_label = ctk.CTkLabel(
+                    bottom_frame,
+                    text=f"₹{item.price:.2f}",
+                    font=ctk.CTkFont(size=20, weight="bold"),
+                    text_color=ACCENT_COLOR,
+                    anchor="w"
+                )
+                price_label.grid(row=0, column=0, sticky="w")
+
+                # Action buttons container
+                actions_frame = ctk.CTkFrame(bottom_frame, fg_color="transparent")
+                actions_frame.grid(row=0, column=1, sticky="e")
+
+                # Heart/Favorite button
                 is_fav = self.user.is_favorite_menu_item(item.item_id)
-                heart_text = "\u2665" if is_fav else "\u2661"  # ♥ or ♡
-                heart_button = ctk.CTkButton(item_card, text=heart_text, width=36, fg_color="transparent", text_color=("#E53935" if is_fav else "#888"), font=ctk.CTkFont(size=20), hover_color="#ffeaea",
-                                             command=lambda i=item, b=None: self._toggle_favorite_menu_item(i, b))
-                heart_button.grid(row=0, column=3, rowspan=3, padx=(0, 8), pady=10, sticky="e")
+                heart_text = "❤️" if is_fav else "🤍"
+                heart_button = ctk.CTkButton(
+                    actions_frame,
+                    text=heart_text,
+                    width=45,
+                    height=45,
+                    fg_color="transparent",
+                    hover_color=HOVER_BG_COLOR,
+                    font=ctk.CTkFont(size=18),
+                    corner_radius=12,
+                    command=lambda i=item, b=None: self._toggle_favorite_menu_item(i, b)
+                )
+                heart_button.pack(side="left", padx=(0, 10))
                 heart_button.configure(command=lambda i=item, b=heart_button: self._toggle_favorite_menu_item(i, b))
 
-                add_to_cart_button = ctk.CTkButton(item_card, text="Add to Cart",
-                                                   fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR,
-                                                   text_color=TEXT_COLOR, font=ctk.CTkFont(weight="bold"),
-                                                   width=100, command=lambda i=item: self._add_to_cart(i))
-                add_to_cart_button.grid(row=0, column=2, rowspan=3, padx=15, pady=10, sticky="e")
+                # Modern Add to Cart button
+                add_to_cart_button = ctk.CTkButton(
+                    actions_frame,
+                    text="+ Add to Cart",
+                    fg_color=ACCENT_COLOR,
+                    hover_color="#7C3AED",
+                    text_color="white",
+                    font=ctk.CTkFont(size=14, weight="bold"),
+                    height=45,
+                    corner_radius=16,
+                    command=lambda i=item: self._add_to_cart(i)
+                )
+                add_to_cart_button.pack(side="left")
 
                 current_row += 1
         return current_row
+
+    def _create_food_image(self, parent_frame, item):
+        """Create a modern food image with rounded corners and fallback"""
+        if item.image_filename:
+            project_root = self.app_ref.project_root
+            image_path = os.path.join(project_root, "assets", "menu_items", item.image_filename)
+            ctk_image = load_image(image_path, size=(120, 120))
+            if ctk_image:
+                image_label = ctk.CTkLabel(
+                    parent_frame,
+                    image=ctk_image,
+                    text="",
+                    corner_radius=16
+                )
+                image_label.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
+                return
+
+        # Modern fallback image
+        fallback_label = ctk.CTkLabel(
+            parent_frame,
+            text="🍽️",
+            width=120,
+            height=120,
+            fg_color=HOVER_BG_COLOR,
+            text_color=GRAY_TEXT_COLOR,
+            font=ctk.CTkFont(size=40),
+            corner_radius=16
+        )
+        fallback_label.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
 
     def _toggle_favorite_menu_item(self, menu_item, button):
         is_fav = self.user.is_favorite_menu_item(menu_item.item_id)
