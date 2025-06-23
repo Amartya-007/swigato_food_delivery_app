@@ -238,4 +238,3 @@ def populate_sample_reviews():
     conn.close()
 
 # No need for get_average_rating_for_restaurant, as Restaurant.rating property handles this.
-# No need for get_reviews_by_user, as User.reviews property handles this.
