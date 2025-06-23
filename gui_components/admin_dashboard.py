@@ -168,11 +168,3 @@ class AdminDashboard(ctk.CTkFrame):
 
     def hide(self):
         self.lower()
-        if self.current_screen_frame:
-            self.current_screen_frame.lower()
-        logger.info("AdminDashboard hidden.")
-
-# Note: The AdminDashboard class is designed to be used within a larger application context
-# where the app_callbacks dictionary contains necessary functions like 'show_main_app_screen' and 'logout
-
-
