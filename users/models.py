@@ -4,18 +4,18 @@ from utils.database import get_db_connection
 from utils.logger import log
 
 class User:
-    def __init__(self, user_id, username, password_hash, address=None, created_at=None, is_admin=False): # Added is_admin
+    def __init__(self, user_id, username, password_hash, address=None, email=None, phone=None, created_at=None, is_admin=False):
         self.user_id = user_id
         self.username = username
         self.password_hash = password_hash
         self.address = address
+        self.email = email
+        self.phone = phone
         self.created_at = created_at # Should be set by DB or on creation
         self.is_admin = is_admin # Added is_admin
 
     def __repr__(self):
-        return f"<User {self.username} (ID: {self.user_id}) Admin: {self.is_admin}>" # Updated repr
-
-    def update_address(self, new_address):
+        return f"<User {self.username} (ID: {self.user_id}) Admin: {self.is_admin}>" # Updated repr    def update_address(self, new_address):
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
@@ -26,6 +26,54 @@ class User:
             return True
         except Exception as e:
             log(f"Error updating address for user ID {self.user_id}: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_email(self, new_email):
+        """Updates the user's email in the database."""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET email = ? WHERE user_id = ?", (new_email, self.user_id))
+            conn.commit()
+            self.email = new_email
+            log(f"Email updated for user ID {self.user_id} in DB.")
+            return True
+        except Exception as e:
+            log(f"Error updating email for user ID {self.user_id}: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_phone(self, new_phone):
+        """Updates the user's phone number in the database."""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET phone = ? WHERE user_id = ?", (new_phone, self.user_id))
+            conn.commit()
+            self.phone = new_phone
+            log(f"Phone updated for user ID {self.user_id} in DB.")
+            return True
+        except Exception as e:
+            log(f"Error updating phone for user ID {self.user_id}: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def update_username(self, new_username):
+        """Updates the user's username in the database."""
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE users SET username = ? WHERE user_id = ?", (new_username, self.user_id))
+            conn.commit()
+            self.username = new_username
+            log(f"Username updated for user ID {self.user_id} in DB.")
+            return True
+        except Exception as e:
+            log(f"Error updating username for user ID {self.user_id}: {e}")
             return False
         finally:
             conn.close()
@@ -69,18 +117,17 @@ class User:
             conn.close()
 
     @staticmethod
-    def create(username, password, address=None, is_admin=False): # Added is_admin
+    def create(username, password, address=None, email=None, phone=None, is_admin=False):
         """Creates a new user in the database."""
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO users (username, password_hash, address, is_admin) VALUES (?, ?, ?, ?)", # Added is_admin
-                           (username, password_hash.decode('utf-8'), address, is_admin)) # Added is_admin
+            cursor.execute("INSERT INTO users (username, password_hash, address, email, phone, is_admin) VALUES (?, ?, ?, ?, ?, ?)", 
+                           (username, password_hash.decode('utf-8'), address, email, phone, is_admin))
             conn.commit()
             user_id = cursor.lastrowid
-            log(f"User '{username}' created with ID {user_id}, Admin status: {is_admin}.")
-            # Fetch the created_at timestamp from the DB for the new User object
+            log(f"User '{username}' created with ID {user_id}, Admin status: {is_admin}.")            # Fetch the created_at timestamp from the DB for the new User object
             new_user_data = User.get_by_id(user_id) # Re-fetch to get all fields like created_at and is_admin
             return new_user_data
         except sqlite3.IntegrityError: # Handles unique username constraint
@@ -98,12 +145,13 @@ class User:
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT user_id, username, password_hash, address, created_at, is_admin FROM users WHERE username = ?", (username,)) # Added is_admin
+            cursor.execute("SELECT user_id, username, password_hash, address, email, phone, created_at, is_admin FROM users WHERE username = ?", (username,))
             row = cursor.fetchone()
             if row:
                 return User(user_id=row['user_id'], username=row['username'], 
                             password_hash=row['password_hash'], address=row['address'], 
-                            created_at=row['created_at'], is_admin=row['is_admin']) # Added is_admin
+                            email=row['email'], phone=row['phone'], 
+                            created_at=row['created_at'], is_admin=row['is_admin'])
             return None
         except Exception as e:
             log(f"Error fetching user '{username}': {e}")
@@ -117,12 +165,13 @@ class User:
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT user_id, username, password_hash, address, created_at, is_admin FROM users WHERE user_id = ?", (user_id,)) # Added is_admin
+            cursor.execute("SELECT user_id, username, password_hash, address, email, phone, created_at, is_admin FROM users WHERE user_id = ?", (user_id,))
             row = cursor.fetchone()
             if row:
                 return User(user_id=row['user_id'], username=row['username'], 
                             password_hash=row['password_hash'], address=row['address'], 
-                            created_at=row['created_at'], is_admin=row['is_admin']) # Added is_admin
+                            email=row['email'], phone=row['phone'],
+                            created_at=row['created_at'], is_admin=row['is_admin'])
             return None
         except Exception as e:
             log(f"Error fetching user ID {user_id}: {e}")
@@ -138,11 +187,12 @@ class User:
         users = []
         try:
             # Modified SQL query to order by user_id ASC
-            cursor.execute("SELECT user_id, username, password_hash, address, created_at, is_admin FROM users ORDER BY user_id ASC")
+            cursor.execute("SELECT user_id, username, password_hash, address, email, phone, created_at, is_admin FROM users ORDER BY user_id ASC")
             rows = cursor.fetchall()
             for row in rows:
                 users.append(User(user_id=row['user_id'], username=row['username'],
                                   password_hash=row['password_hash'], address=row['address'],
+                                  email=row['email'], phone=row['phone'],
                                   created_at=row['created_at'], is_admin=row['is_admin']))
             return users
         except Exception as e:

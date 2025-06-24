@@ -10,12 +10,11 @@ from users.models import User
 from tkinter import messagebox
 
 class MenuScreen(ctk.CTkFrame):
-    def __init__(self, app_ref, user, restaurant, show_cart_callback):
+    def __init__(self, app_ref, user, restaurant):
         super().__init__(app_ref, fg_color=BACKGROUND_COLOR)
         self.app_ref = app_ref
         self.user = user
         self.restaurant = restaurant
-        self.show_cart_callback = show_cart_callback
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=0)  # Modern Header Frame
@@ -83,7 +82,7 @@ class MenuScreen(ctk.CTkFrame):
         view_cart_button = ctk.CTkButton(
             header_frame, 
             text="🛒 View Cart",
-            command=self.show_cart_callback,
+            command=self.show_cart_in_main_app,
             fg_color=PRIMARY_COLOR,
             hover_color=BUTTON_HOVER_COLOR,
             text_color="white",
@@ -688,12 +687,11 @@ class MenuScreen(ctk.CTkFrame):
         self.after(3000, lambda: self.status_label.configure(text=""))
 
     def create_bottom_nav_bar(self):
-        """Create the bottom navigation bar with modern glassmorphism effects"""
-        # Create a modern glassmorphism-style navigation bar
+        """Create the bottom navigation bar with modern glassmorphism effects - matching main window"""        # Create a modern glassmorphism-style navigation bar
         bottom_nav_frame = ctk.CTkFrame(
             self, 
             fg_color=FRAME_FG_COLOR, 
-            height=90, 
+            height=100,  # Increased height to accommodate larger buttons
             corner_radius=20,
             border_width=1,
             border_color=FRAME_BORDER_COLOR
@@ -714,23 +712,25 @@ class MenuScreen(ctk.CTkFrame):
         nav_container = ctk.CTkFrame(bottom_nav_frame, fg_color="transparent")
         nav_container.grid(row=0, column=1, pady=15, sticky="")
         
-        # Navigation items with modern icons
+        # Navigation items with modern icons - with Restaurants as active
         nav_items = [
             ("home", "🏠", "Home"),
-            ("favorites", "⭐", "Favorites"),
-            ("cart", "🛒", "Cart")
+            ("restaurants", "🍴", "Restaurants"),  # This will be active
         ]
         
         # Add Orders for non-admin users
         if not (hasattr(self.user, "is_admin") and self.user.is_admin):
-            nav_items.insert(1, ("orders", "📋", "Orders"))
+            nav_items.append(("orders", "📋", "Orders"))
         
-        # Get cart count for display
+        nav_items.extend([
+            ("favorites", "⭐", "Favorites"),
+            ("cart", "🛒", "Cart")
+        ])
+        
+        # Add cart count if there are items in the cart
         cart_count = 0
         if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
             cart_count = len(self.app_ref.cart.items)
-        
-        # Update cart display with count
         if cart_count > 0:
             cart_text = f"🛒({cart_count})"
             nav_items = [(key, icon if key != "cart" else cart_text, label) for key, icon, label in nav_items]
@@ -738,20 +738,31 @@ class MenuScreen(ctk.CTkFrame):
         # Configure nav container grid
         for i in range(len(nav_items)):
             nav_container.grid_columnconfigure(i, weight=0)
-        
-        # Modern button style with enhanced effects
+          # Modern button style with enhanced effects - increased size to match main window
         button_style = {
-            "width": 60,
-            "height": 60,
+            "width": 70,
+            "height": 70,
             "fg_color": "transparent",
             "hover_color": HOVER_BG_COLOR,
             "text_color": GRAY_TEXT_COLOR,
-            "font": ctk.CTkFont(size=24),
+            "font": ctk.CTkFont(size=28),
             "border_width": 0,
             "corner_radius": 15
         }
         
-        # Create navigation buttons with modern styling
+        # Active button style with modern accent - increased size to match main window
+        active_button_style = {
+            "width": 70,
+            "height": 70,
+            "fg_color": PRIMARY_COLOR,
+            "hover_color": BUTTON_HOVER_COLOR,
+            "text_color": "white",
+            "font": ctk.CTkFont(size=28),
+            "border_width": 0,
+            "corner_radius": 15
+        }
+        
+        # Create navigation buttons with modern styling and better spacing
         for i, (key, icon, label) in enumerate(nav_items):
             # Button container for better spacing
             btn_container = ctk.CTkFrame(nav_container, fg_color="transparent")
@@ -760,11 +771,12 @@ class MenuScreen(ctk.CTkFrame):
             btn_container.grid_rowconfigure(1, weight=0)
             
             # Modern icon button
+            style = active_button_style if key == "restaurants" else button_style
             btn = ctk.CTkButton(
                 btn_container, 
                 text=icon,
                 command=lambda k=key: self.handle_nav_click(k),
-                **button_style
+                **style
             )
             btn.grid(row=0, column=0, pady=(0, 5))
             self.nav_buttons[key] = btn
@@ -774,22 +786,23 @@ class MenuScreen(ctk.CTkFrame):
                 btn_container, 
                 text=label,
                 font=ctk.CTkFont(size=11, weight="bold"),
-                text_color=GRAY_TEXT_COLOR
+                text_color=PRIMARY_COLOR if key == "restaurants" else GRAY_TEXT_COLOR
             )
             label_widget.grid(row=1, column=0)
             
-            # Store label reference for state updates
+            # Store label reference for active state updates
             self.nav_buttons[f"{key}_label"] = label_widget
         
-        # Back to Restaurants button positioned at the far right
+        # Back button positioned at the far right (instead of logout)
         back_container = ctk.CTkFrame(bottom_nav_frame, fg_color="transparent")
         back_container.grid(row=0, column=3, padx=20, pady=15, sticky="e")
+        
         back_btn = ctk.CTkButton(
             back_container,
-            text="< Back",
+            text="← Back",
             command=self.go_back_to_main_app,
-            fg_color=SECONDARY_COLOR,
-            hover_color="#6B7280",
+            fg_color=PRIMARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
             text_color="white",
             font=ctk.CTkFont(size=14, weight="bold"),
             width=85, 
@@ -797,13 +810,18 @@ class MenuScreen(ctk.CTkFrame):
             corner_radius=12
         )
         back_btn.pack()
+          # Set current active tab
+        self.current_nav_tab = "restaurants"
 
     def handle_nav_click(self, tab_name):
         """Handle navigation button clicks"""
         if tab_name == "cart":
-            # Navigate to cart screen
-            self.app_ref.show_cart_screen()
+            # Navigate to main app and show cart content
+            self.show_cart_in_main_app()
         elif tab_name == "home":
+            self.go_back_to_main_app()
+        elif tab_name == "restaurants":
+            # Navigate back to main app (restaurants view)
             self.go_back_to_main_app()
         elif tab_name == "orders":
             # Navigate to main app and show orders
@@ -845,3 +863,21 @@ class MenuScreen(ctk.CTkFrame):
     def refresh_reviews(self):
         log("MenuScreen.refresh_reviews called, will repopulate main scroll content.")
         self._populate_main_scroll_content()
+
+    def show_cart_in_main_app(self):
+        """Navigate back to main app and show cart content"""
+        try:
+            # Go back to main app screen and switch to cart tab
+            self.app_ref.show_main_app_screen()
+            # If the main app screen has a method to show cart content, call it
+            if hasattr(self.app_ref, 'main_app_screen_instance') and self.app_ref.main_app_screen_instance:
+                main_screen = self.app_ref.main_app_screen_instance
+                if hasattr(main_screen, 'show_cart_content'):
+                    main_screen.show_cart_content()
+                    # Also update the navigation tab to cart
+                    if hasattr(main_screen, 'set_active_nav_tab'):
+                        main_screen.set_active_nav_tab("cart")
+        except Exception as e:
+            log(f"Error navigating to cart: {e}")
+            # Fallback: just show main app screen
+            self.app_ref.show_main_app_screen()

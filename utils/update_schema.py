@@ -48,6 +48,40 @@ def add_image_filename_columns():
 
     except sqlite3.Error as e:
         log(f"SQLite error during schema update: {e}")
+
+def add_user_profile_columns():
+    """
+    Adds email and phone columns to the users table if they don't already exist.
+    """
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    db_path = os.path.join(project_root, "data", "swigato.db")
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Check and add email column to users table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if "email" not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
+            log("Added 'email' column to 'users' table.")
+        else:
+            log("'email' column already exists in 'users' table.")
+
+        # Check and add phone column to users table
+        if "phone" not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+            log("Added 'phone' column to 'users' table.")
+        else:
+            log("'phone' column already exists in 'users' table.")
+
+        conn.commit()
+        log("User profile schema update complete.")
+
+    except sqlite3.Error as e:
+        log(f"SQLite error during user profile schema update: {e}")
         if conn:
             conn.rollback()
     except Exception as e:
@@ -61,4 +95,5 @@ def add_image_filename_columns():
 if __name__ == "__main__":
     # sys.path is adjusted at the top, and imports are resolved globally.
     add_image_filename_columns()
+    add_user_profile_columns()
   

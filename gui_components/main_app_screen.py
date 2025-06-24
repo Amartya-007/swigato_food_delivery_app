@@ -1,19 +1,26 @@
 import customtkinter as ctk
 import os
+from tkinter import messagebox
 from PIL import Image, ImageTk
-from gui_Light import BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, SEMI_TRANSPARENT_OVERLAY, CLOSE_BUTTON_BG, CLOSE_BUTTON_TEXT, ERROR_COLOR, BUTTON_TEXT_COLOR, CARD_SHADOW_COLOR, GLASS_BG_COLOR, LIGHT_ORANGE_BG, LIGHT_PURPLE_BG, HOVER_BG_COLOR, MODERN_BORDER, set_swigato_icon, ENTRY_BG_COLOR
+
+from gui_Light import (
+    BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, 
+    BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, 
+    SECONDARY_COLOR, GRAY_TEXT_COLOR, ERROR_COLOR, BUTTON_TEXT_COLOR,
+    HOVER_BG_COLOR, LIGHT_ORANGE_BG, set_swigato_icon
+)
 from utils.image_loader import load_image
 from utils.logger import log
 from orders.models import get_orders_by_user_id
 from cart.models import Cart
+from restaurants.models import Restaurant, MenuItem
 
 class MainAppScreen(ctk.CTkFrame):
-    def __init__(self, app_ref, user, show_menu_callback, show_cart_callback, logout_callback):
+    def __init__(self, app_ref, user, show_menu_callback, logout_callback):
         super().__init__(app_ref, fg_color=BACKGROUND_COLOR)
         self.app_ref = app_ref # Store reference to the main SwigatoApp instance
         self.user = user
         self.show_menu_callback = show_menu_callback
-        self.show_cart_callback = show_cart_callback
         self.logout_callback = logout_callback
         self.restaurants = []
 
@@ -66,7 +73,7 @@ class MainAppScreen(ctk.CTkFrame):
             font=ctk.CTkFont(size=16, weight="bold"),
             border_width=0,
             corner_radius=22,
-            command=self.show_profile_popup
+            command=self.show_profile_panel
         )
         # Position profile button at the rightmost position
         profile_col = 3 if hasattr(self.user, "is_admin") and self.user.is_admin else 2
@@ -116,12 +123,19 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Add Orders for non-admin users
         if not (hasattr(self.user, "is_admin") and self.user.is_admin):
-            nav_items.append(("orders", "📋", "Orders"))
-        
+            nav_items.append(("orders", "📋", "Orders"))        
         nav_items.extend([
             ("favorites", "⭐", "Favorites"),
             ("cart", "🛒", "Cart")  # Cart moved to rightmost position
         ])
+        
+        # Add cart count if there are items in the cart
+        cart_count = 0
+        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+            cart_count = len(self.app_ref.cart.items)
+        if cart_count > 0:
+            cart_text = f"🛒({cart_count})"
+            nav_items = [(key, icon if key != "cart" else cart_text, label) for key, icon, label in nav_items]
         
         # Configure nav container grid
         for i in range(len(nav_items)):
@@ -241,20 +255,67 @@ class MainAppScreen(ctk.CTkFrame):
                 else:
                     button.configure(**inactive_style)
                     # Update corresponding label color
-                    if f"{tab_name}_label" in self.nav_buttons:                        self.nav_buttons[f"{tab_name}_label"].configure(text_color=GRAY_TEXT_COLOR)
+                    if f"{tab_name}_label" in self.nav_buttons:
+                        self.nav_buttons[f"{tab_name}_label"].configure(text_color=GRAY_TEXT_COLOR)
 
     def setup_content_areas(self):
         """Setup all content areas in the main content frame"""
         
+        # Create a container for restaurants section with search
+        self.restaurant_container = ctk.CTkFrame(self.main_content_frame, fg_color=BACKGROUND_COLOR)
+        self.restaurant_container.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.restaurant_container.grid_columnconfigure(0, weight=1)
+        self.restaurant_container.grid_rowconfigure(0, weight=0)  # Search bar
+        self.restaurant_container.grid_rowconfigure(1, weight=1)  # Restaurant list        # Search bar frame
+        search_frame = ctk.CTkFrame(self.restaurant_container, fg_color=FRAME_FG_COLOR, 
+                                   corner_radius=12, border_width=1, border_color=FRAME_BORDER_COLOR)
+        search_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="ew")
+        search_frame.grid_columnconfigure(1, weight=1)
+
+        # Search icon/label
+        ctk.CTkLabel(search_frame, text="🔍", font=ctk.CTkFont(size=20), 
+                    text_color=PRIMARY_COLOR).grid(row=0, column=0, padx=(15, 10), pady=10)        # Search entry with light theme styling
+        self.search_entry = ctk.CTkEntry(
+            search_frame, 
+            placeholder_text="Search restaurants, cuisines, or food items...",
+            font=ctk.CTkFont(size=14),
+            height=40,
+            fg_color="white",
+            text_color=TEXT_COLOR,
+            placeholder_text_color=GRAY_TEXT_COLOR,
+            border_width=1,
+            border_color=FRAME_BORDER_COLOR,
+            corner_radius=8
+        )
+        self.search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=10)
+        self.search_entry.bind("<KeyRelease>", self.on_search_change)
+
+        # Filter button with consistent styling
+        filter_btn = ctk.CTkButton(
+            search_frame,
+            text="🍜 Filter",
+            width=100,
+            height=40,
+            fg_color=FRAME_FG_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color=TEXT_COLOR,
+            border_width=1,
+            border_color=FRAME_BORDER_COLOR,
+            corner_radius=8,            command=self.show_filter_options
+        )
+        filter_btn.grid(row=0, column=2, padx=(0, 15), pady=10)
+        
         # Modern Restaurant List Scrollable Frame
         self.restaurant_scroll_frame = ctk.CTkScrollableFrame(
-            self.main_content_frame, 
+            self.restaurant_container, 
             fg_color=BACKGROUND_COLOR, 
             border_width=0,
             corner_radius=0
         )
-        self.restaurant_scroll_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
-        self.restaurant_scroll_frame.grid_columnconfigure(0, weight=1)        # Modern Favorites content frame
+        self.restaurant_scroll_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        self.restaurant_scroll_frame.grid_columnconfigure(0, weight=1)
+        
+        # Modern Favorites content frame
         self.favorites_content_frame = ctk.CTkFrame(self.main_content_frame, fg_color=BACKGROUND_COLOR)
         self.favorites_content_frame.grid_columnconfigure(0, weight=1)
         self.favorites_content_frame.grid_rowconfigure(1, weight=1)
@@ -330,15 +391,14 @@ class MainAppScreen(ctk.CTkFrame):
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
         self.cart_content_frame.grid_remove()
-        
-        # Show restaurants
-        self.restaurant_scroll_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+          # Show restaurants container (includes search bar)
+        self.restaurant_container.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.load_restaurants()
 
     def show_favorites_content(self):
         """Show favorites content"""
         # Hide other content
-        self.restaurant_scroll_frame.grid_remove()
+        self.restaurant_container.grid_remove()
         self.orders_content_frame.grid_remove()
         self.cart_content_frame.grid_remove()
         
@@ -349,7 +409,7 @@ class MainAppScreen(ctk.CTkFrame):
     def show_orders_content(self):
         """Show orders content"""
         # Hide other content
-        self.restaurant_scroll_frame.grid_remove()
+        self.restaurant_container.grid_remove()
         self.favorites_content_frame.grid_remove()
         self.cart_content_frame.grid_remove()
         
@@ -360,7 +420,7 @@ class MainAppScreen(ctk.CTkFrame):
     def show_cart_content(self):
         """Show cart content"""
         # Hide other content
-        self.restaurant_scroll_frame.grid_remove()
+        self.restaurant_container.grid_remove()
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
         
@@ -369,12 +429,10 @@ class MainAppScreen(ctk.CTkFrame):
         self.load_cart_items()
 
     def load_restaurants(self):
-        log("MainAppScreen.load_restaurants called")
-        # Clear existing restaurant widgets
+        log("MainAppScreen.load_restaurants called")        # Clear existing restaurant widgets
         for widget in self.restaurant_scroll_frame.winfo_children():
             widget.destroy()
 
-        from restaurants.models import Restaurant # Local import to avoid circular dependency issues at module level
         self.restaurants = Restaurant.get_all()
         log(f"Loaded {len(self.restaurants)} restaurants.")
 
@@ -452,7 +510,9 @@ class MainAppScreen(ctk.CTkFrame):
                 text_color=TEXT_COLOR, 
                 anchor="w"
             )
-            name_label.grid(row=0, column=0, pady=(0, 8), sticky="ew")            # Modern cuisine tag with pill-style design
+            name_label.grid(row=0, column=0, pady=(0, 8), sticky="ew")            
+            
+            # Modern cuisine tag with pill-style design
             cuisine_container = ctk.CTkFrame(details_frame, fg_color="transparent")
             cuisine_container.grid(row=1, column=0, pady=(0, 8), sticky="ew")
             cuisine_container.grid_columnconfigure(0, weight=0)
@@ -492,7 +552,13 @@ class MainAppScreen(ctk.CTkFrame):
             )
             stars_label.grid(row=0, column=0, padx=(0, 12))
             
-            rating_text = f"{restaurant.rating:.1f} • {restaurant.get_review_count()} reviews"
+            # Show "No reviews yet" for restaurants with 0 reviews, otherwise show rating and count
+            review_count = restaurant.get_review_count()
+            if review_count == 0:
+                rating_text = "No reviews yet"
+            else:
+                rating_text = f"{restaurant.rating:.1f} • {review_count} review{'s' if review_count != 1 else ''}"
+            
             rating_label = ctk.CTkLabel(
                 rating_container, 
                 text=rating_text,
@@ -514,7 +580,7 @@ class MainAppScreen(ctk.CTkFrame):
                 text="♥",  # Use solid heart symbol for both states
                 width=45, 
                 height=45,
-                fg_color="#FFE4E6" if is_fav else "transparent",  # Light pink background when favorited
+                fg_color="#FFE4E6" if is_fav else FRAME_FG_COLOR,  # Light pink background
                 hover_color="#FECACA" if is_fav else "#FEF2F2",
                 text_color="#DC2626" if is_fav else "#9CA3AF",  # Red when favorited, gray when not
                 font=ctk.CTkFont(size=18, weight="bold"),
@@ -542,7 +608,7 @@ class MainAppScreen(ctk.CTkFrame):
             )
             view_menu_button.grid(row=2, column=0)
 
-    def _toggle_favorite_restaurant(self, restaurant, button):
+    def _toggle_favorite_restaurant(self, restaurant, button=None):
         is_fav = self.user.is_favorite_restaurant(restaurant.restaurant_id)
         if is_fav:
             self.user.remove_favorite_restaurant(restaurant.restaurant_id)
@@ -551,308 +617,699 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Update button appearance with clear visual states
         new_is_fav = self.user.is_favorite_restaurant(restaurant.restaurant_id)
-        if new_is_fav:
-            # Favorited state: light pink background, red heart and border
-            button.configure(
-                fg_color="#FFE4E6",
-                text_color="#DC2626",
-                border_color="#DC2626",
-                hover_color="#FECACA"
-            )
-        else:
-            # Not favorited state: transparent background, gray heart and border
-            button.configure(
-                fg_color="transparent",
-                text_color="#9CA3AF",
-                border_color="#E5E7EB",
-                hover_color="#FEF2F2"
-            )
-
-    def show_favorites_section(self):
-        # Destroy any previous favorites window
-        if hasattr(self, 'favorites_window') and self.favorites_window:
-            self.favorites_window.destroy()
-        self.favorites_window = ctk.CTkToplevel(self)
-        self.favorites_window.title("Your Favorites")
-        self.favorites_window.geometry("900x500")
-        set_swigato_icon(self.favorites_window)
-        self.favorites_window.grab_set()
-        self.favorites_window.configure(fg_color=FRAME_FG_COLOR)
-        self.favorites_window.grid_columnconfigure(0, weight=1)
-        self.favorites_window.grid_rowconfigure(0, weight=0)
-        self.favorites_window.grid_rowconfigure(1, weight=1)
-
-        heading_label = ctk.CTkLabel(
-            self.favorites_window,
-            text="Your Favorites",
-            font=ctk.CTkFont(size=25, weight="bold"),
-            text_color=PRIMARY_COLOR,
-            fg_color="transparent",
-            anchor="center",
-            justify="center"
-        )
-        heading_label.grid(row=0, column=0, pady=(18, 0), padx=20, sticky="n")
-
-        scroll_frame = ctk.CTkScrollableFrame(self.favorites_window, fg_color=FRAME_FG_COLOR, corner_radius=14, border_width=1, border_color=FRAME_BORDER_COLOR)
-        scroll_frame.grid(row=1, column=0, padx=24, pady=24, sticky="nsew")
-        scroll_frame.grid_columnconfigure(0, weight=1)
-        scroll_frame.grid_rowconfigure(0, weight=1)
-
-        # Favorite Restaurants
-        fav_restaurants = self.user.get_favorite_restaurants()
-        fav_menu_items = self.user.get_favorite_menu_items()
-        row = 0
-        if fav_restaurants:
-            ctk.CTkLabel(scroll_frame, text="Favorite Restaurants", font=ctk.CTkFont(size=18, weight="bold"), text_color=PRIMARY_COLOR).grid(row=row, column=0, sticky="w", pady=(0, 8))
-            row += 1
-            for rest in fav_restaurants:
-                rest_card = ctk.CTkFrame(scroll_frame, fg_color=BACKGROUND_COLOR, 
-                                       border_width=1, border_color=FRAME_BORDER_COLOR, corner_radius=8)
-                rest_card.grid(row=row, column=0, sticky="ew", padx=10, pady=(0, 8))
-                rest_card.grid_columnconfigure(0, weight=1)                
-                ctk.CTkLabel(rest_card, text=rest.name, font=ctk.CTkFont(size=16, weight="bold"), 
-                           text_color=TEXT_COLOR).pack(pady=8)
-                ctk.CTkButton(rest_card, text="View Menu", fg_color=PRIMARY_COLOR, 
-                            hover_color=BUTTON_HOVER_COLOR, text_color=TEXT_COLOR, font=ctk.CTkFont(size=14, weight="bold"),  # Added explicit size 14
-                            command=lambda r=rest: self.show_menu_callback(r)).pack(pady=(0, 8))
-                row += 1
-        else:
-            ctk.CTkLabel(scroll_frame, text="No favorite restaurants yet.", font=ctk.CTkFont(size=13), text_color=GRAY_TEXT_COLOR).grid(row=row, column=0, sticky="w", pady=(0, 8))
-            row += 1
-        # Favorite Menu Items
-        if fav_menu_items:
-            ctk.CTkLabel(scroll_frame, text="Favorite Dishes", font=ctk.CTkFont(size=18, weight="bold"), text_color=PRIMARY_COLOR).grid(row=row, column=0, sticky="w", pady=(16, 8))
-            row += 1
-            from restaurants.models import Restaurant, MenuItem
-            for item in fav_menu_items:
-                # Get restaurant name for this menu item
-                rest_name = ""
-                if hasattr(item, 'restaurant_id') and item.restaurant_id:
-                    rest_obj = Restaurant.get_by_id(item.restaurant_id)
-                    if rest_obj:
-                        rest_name = rest_obj.name
-                # Row frame for dish + button
-                row_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-                row_frame.grid(row=row, column=0, sticky="ew", pady=(0, 4))
-                row_frame.grid_columnconfigure(0, weight=1)
-                # Dish label
-                item_label = ctk.CTkLabel(row_frame, text=f"{item.name} ({rest_name})" if rest_name else item.name, font=ctk.CTkFont(size=15), text_color=TEXT_COLOR)
-                item_label.grid(row=0, column=0, sticky="w")                # Quick Order button
-                quick_order_btn = ctk.CTkButton(row_frame, text="Quick Order", width=90, fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR, text_color=TEXT_COLOR, font=ctk.CTkFont(size=14, weight="bold"),  # Increased from 12 to 14
-                    command=lambda i=item: self._quick_order_from_favorites(i))
-                quick_order_btn.grid(row=0, column=1, padx=(10,0), sticky="e")
-                row += 1
-        else:
-            ctk.CTkLabel(scroll_frame, text="No favorite dishes yet.", font=ctk.CTkFont(size=13), text_color=GRAY_TEXT_COLOR).grid(row=row, column=0, sticky="w", pady=(0, 8))
-
-    def _quick_order_from_favorites(self, menu_item):
-        # Add the item to the user's cart (quantity 1)
-        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
-            # Set the current_restaurant to the menu item's restaurant
-            if hasattr(menu_item, 'restaurant_id') and menu_item.restaurant_id:
-                from restaurants.models import Restaurant
-                rest_obj = Restaurant.get_by_id(menu_item.restaurant_id)
-                if rest_obj:
-                    self.app_ref.current_restaurant = rest_obj
-            added = self.app_ref.cart.add_item(menu_item, 1)
-            if added:
-                ctk.CTkLabel(self.favorites_window, text=f"'{menu_item.name}' added to cart!", font=ctk.CTkFont(size=12), text_color=SUCCESS_COLOR, fg_color="transparent").place(relx=0.5, rely=0.98, anchor="s")
+        if button:  # Only update button if one is provided
+            if new_is_fav:
+                # Favorited state: light pink background, red heart and border
+                button.configure(
+                    fg_color="#FFE4E6",
+                    text_color="#DC2626",
+                    border_color="#DC2626",
+                    hover_color="#FECACA"
+                )
             else:
-                ctk.CTkLabel(self.favorites_window, text=f"Failed to add '{menu_item.name}'.", font=ctk.CTkFont(size=12), text_color=ERROR_COLOR, fg_color="transparent").place(relx=0.5, rely=0.98, anchor="s")
-        else:
-            ctk.CTkLabel(self.favorites_window, text="Error: Cart not available.", font=ctk.CTkFont(size=12), text_color=ERROR_COLOR, fg_color="transparent").place(relx=0.5, rely=0.98, anchor="s")
+                # Not favorited state: transparent background, gray heart and border
+                button.configure(                    fg_color="transparent",                    text_color="#9CA3AF",
+                    border_color="#E5E7EB",
+                    hover_color="#FEF2F2"
+                )
 
     def update_user_info(self, user):
         self.user = user
         self.welcome_label.configure(text=f"Welcome, {self.user.username}!")
         self.load_restaurants() # Reload restaurants, in case of user-specific content in future
 
-    def show_order_history(self):
-        # Destroy any previous order history window
-        if hasattr(self, 'order_history_window') and self.order_history_window:
-            self.order_history_window.destroy()
-        self.order_history_window = ctk.CTkToplevel(self)
-        self.order_history_window.title("Order History")
-        self.order_history_window.geometry("900x500")
-        set_swigato_icon(self.order_history_window)
-        self.order_history_window.grab_set()
-
-        # Light theme: white background, dark text
-        self.order_history_window.configure(fg_color=FRAME_FG_COLOR)
-        self.order_history_window.grid_columnconfigure(0, weight=1)
-        self.order_history_window.grid_rowconfigure(0, weight=0)
-        self.order_history_window.grid_rowconfigure(1, weight=1)
-
-        # Add heading label (centered, no corners, transparent background, orange text)
-        heading_label = ctk.CTkLabel(
-            self.order_history_window,
-            text="Order History",
-            font=ctk.CTkFont(size=25, weight="bold"),
-            text_color=PRIMARY_COLOR,
+    def show_profile_panel(self):
+        """Show the modern profile popup window"""
+        log("show_profile_panel called - showing modern popup window")
+        
+        # Destroy previous profile window if exists
+        if hasattr(self, 'profile_window') and self.profile_window and self.profile_window.winfo_exists():
+            self.profile_window.destroy()        # Create new modern profile window with larger size to fit all content
+        self.profile_window = ctk.CTkToplevel(self)
+        self.profile_window.title("User Profile")
+        self.profile_window.geometry("950x750")
+        self.profile_window.resizable(False, False)
+        set_swigato_icon(self.profile_window)
+        self.profile_window.grab_set()  # Make it modal
+        
+        # Center the window on screen
+        self.profile_window.transient(self.app_ref)
+        
+        # Calculate center position
+        window_width = 950
+        window_height = 750
+        screen_width = self.profile_window.winfo_screenwidth()
+        screen_height = self.profile_window.winfo_screenheight()
+        center_x = int(screen_width/2 - window_width/2)
+        center_y = int(screen_height/2 - window_height/2)
+        
+        # Set the geometry to center the window
+        self.profile_window.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
+        
+        # Configure window with light theme
+        self.profile_window.configure(fg_color="white")  # Light background
+        self.profile_window.grid_columnconfigure(0, weight=1)
+        self.profile_window.grid_rowconfigure(0, weight=1)
+        
+        # Main content frame with light theme styling
+        main_frame = ctk.CTkFrame(
+            self.profile_window, 
+            fg_color="white",  # Light background
+            corner_radius=20,
+            border_width=1,
+            border_color="#E5E7EB"  # Light border
+        )
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(1, weight=1)
+        
+        # Header section with user avatar and name
+        header_frame = ctk.CTkFrame(main_frame, fg_color=PRIMARY_COLOR, corner_radius=15)
+        header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        header_frame.grid_columnconfigure(1, weight=1)
+        
+        # User avatar (placeholder)
+        avatar_label = ctk.CTkLabel(
+            header_frame,
+            text="👤",
+            font=ctk.CTkFont(size=40),
+            text_color="white",
+            fg_color="transparent"
+        )
+        avatar_label.grid(row=0, column=0, padx=(20, 15), pady=20)
+        
+        # User info
+        user_info_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        user_info_frame.grid(row=0, column=1, sticky="ew", padx=(0, 20), pady=20)
+        
+        welcome_label = ctk.CTkLabel(
+            user_info_frame,
+            text=f"Welcome, {self.user.username}!",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color="white"
+        )
+        welcome_label.pack(anchor="w")
+        
+        status_label = ctk.CTkLabel(
+            user_info_frame,
+            text="🟢 Online",
+            font=ctk.CTkFont(size=12),
+            text_color="white"
+        )
+        status_label.pack(anchor="w", pady=(5, 0))
+        
+        # Close button in header
+        close_btn = ctk.CTkButton(
+            header_frame,
+            text="✕",
+            width=30,
+            height=30,
             fg_color="transparent",
-            anchor="center",
+            hover_color="#DC2626",
+            text_color="white",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            command=self.profile_window.destroy
+        )
+        close_btn.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="ne")        # Modern TabView for profile sections with light theme - larger size for no scrolling
+        self.profile_tabview = ctk.CTkTabview(
+            main_frame, 
+            width=890, 
+            height=580,
+            fg_color="white",  # Light background
+            segmented_button_fg_color="#F3F4F6",  # Light gray for tabs
+            segmented_button_selected_color=PRIMARY_COLOR,  # Orange for selected tab
+            segmented_button_selected_hover_color=BUTTON_HOVER_COLOR,
+            text_color="#374151",  # Dark text for better readability
+            segmented_button_unselected_color="#9CA3AF",  # Gray for unselected tabs
+            segmented_button_unselected_hover_color="#D1D5DB"  # Light gray hover
+        )
+        self.profile_tabview.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="nsew")
+        
+        # Add tabs
+        self.profile_tabview.add("👤 Profile")
+        self.profile_tabview.add("🔒 Security") 
+        self.profile_tabview.add("⚙️ Settings")
+        
+        # Set default tab
+        self.profile_tabview.set("👤 Profile")
+        
+        # Setup tab contents
+        self.setup_profile_tab()
+        self.setup_security_tab()
+        self.setup_settings_tab()
+
+    def setup_profile_tab(self):
+        """Setup the profile information tab"""
+        profile_tab = self.profile_tabview.tab("👤 Profile")
+        profile_tab.grid_columnconfigure(0, weight=1)
+          # Profile content frame - no scrolling needed with larger window
+        content_frame = ctk.CTkFrame(
+            profile_tab, 
+            fg_color="transparent",
+            corner_radius=0
+        )
+        content_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        content_frame.grid_columnconfigure(1, weight=1)
+        
+        # Account Information Section
+        section_label = ctk.CTkLabel(
+            content_frame,
+            text="📋 Account Information",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        section_label.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 15))
+        
+        # Username field
+        ctk.CTkLabel(
+            content_frame,
+            text="Username:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.username_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Enter username",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        self.username_entry.insert(0, self.user.username)
+        self.username_entry.grid(row=1, column=1, sticky="ew", pady=5)
+        
+        # Email field
+        ctk.CTkLabel(
+            content_frame,
+            text="Email:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.email_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Enter email address",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        current_email = getattr(self.user, 'email', '')
+        if current_email and current_email != 'N/A':
+            self.email_entry.insert(0, current_email)
+        self.email_entry.grid(row=2, column=1, sticky="ew", pady=5)
+        
+        # Address field
+        ctk.CTkLabel(
+            content_frame,
+            text="Address:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.address_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Enter your address",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        current_address = getattr(self.user, 'address', '')
+        if current_address and current_address != 'N/A':
+            self.address_entry.insert(0, current_address)
+        self.address_entry.grid(row=3, column=1, sticky="ew", pady=5)
+        
+        # Phone field
+        ctk.CTkLabel(
+            content_frame,
+            text="Phone:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=4, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.phone_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Enter phone number",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        current_phone = getattr(self.user, 'phone', '')
+        if current_phone and current_phone != 'N/A':
+            self.phone_entry.insert(0, current_phone)
+        self.phone_entry.grid(row=4, column=1, sticky="ew", pady=5)
+        
+        # Update Profile Button
+        update_btn = ctk.CTkButton(
+            content_frame,
+            text="💾 Update Profile",
+            command=self.update_profile_info,
+            fg_color=PRIMARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=200,
+            height=40,
+            corner_radius=10
+        )
+        update_btn.grid(row=5, column=0, columnspan=2, pady=20)
+        
+        # Account Statistics Section
+        stats_label = ctk.CTkLabel(
+            content_frame,
+            text="📊 Account Statistics",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        stats_label.grid(row=6, column=0, columnspan=2, sticky="w", pady=(20, 15))
+          # Stats frame with light theme
+        stats_frame = ctk.CTkFrame(content_frame, fg_color="#F9FAFB", corner_radius=10, border_width=1, border_color="#E5E7EB")
+        stats_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=10)
+        stats_frame.grid_columnconfigure((0, 1, 2), weight=1)
+        
+        # Total Orders
+        try:
+            orders = get_orders_by_user_id(self.user.user_id)
+            total_orders = len(orders)
+            total_spent = sum(order.total_amount for order in orders)
+        except:
+            total_orders = 0
+            total_spent = 0
+        
+        self.create_stat_card(stats_frame, "🛒", "Total Orders", str(total_orders), 0)
+        self.create_stat_card(stats_frame, "💰", "Total Spent", f"₹{total_spent:.2f}", 1)
+        
+        # Favorite Restaurants
+        fav_restaurants = len(self.user.get_favorite_restaurants())
+        self.create_stat_card(stats_frame, "⭐", "Favorites", str(fav_restaurants), 2)
+
+    def create_stat_card(self, parent, icon, label, value, column):
+        """Create a statistics card with light theme"""
+        card = ctk.CTkFrame(parent, fg_color="white", corner_radius=8, border_width=1, border_color="#E5E7EB")
+        card.grid(row=0, column=column, padx=10, pady=10, sticky="ew")
+        
+        icon_label = ctk.CTkLabel(card, text=icon, font=ctk.CTkFont(size=24))
+        icon_label.pack(pady=(10, 5))
+        
+        value_label = ctk.CTkLabel(
+            card, 
+            text=value, 
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        value_label.pack()
+        
+        label_label = ctk.CTkLabel(
+            card, 
+            text=label, 
+            font=ctk.CTkFont(size=12),
+            text_color="#6B7280"  # Gray for light theme
+        )
+        label_label.pack(pady=(0, 10))
+
+    def setup_security_tab(self):
+        """Setup the security/password tab"""
+        security_tab = self.profile_tabview.tab("🔒 Security")
+        security_tab.grid_columnconfigure(0, weight=1)
+          # Security content frame - no scrolling needed with larger window
+        content_frame = ctk.CTkFrame(
+            security_tab, 
+            fg_color="transparent",
+            corner_radius=0
+        )
+        content_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        content_frame.grid_columnconfigure(1, weight=1)
+        
+        # Change Password Section
+        section_label = ctk.CTkLabel(
+            content_frame,
+            text="🔐 Change Password",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        section_label.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 15))
+        
+        # Current Password
+        ctk.CTkLabel(
+            content_frame,
+            text="Current Password:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.current_pw_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Enter current password",
+            show="*",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        self.current_pw_entry.grid(row=1, column=1, sticky="ew", pady=5)
+        
+        # New Password
+        ctk.CTkLabel(
+            content_frame,
+            text="New Password:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.new_pw_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Enter new password",
+            show="*",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        self.new_pw_entry.grid(row=2, column=1, sticky="ew", pady=5)
+        
+        # Confirm New Password
+        ctk.CTkLabel(
+            content_frame,
+            text="Confirm Password:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR        ).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.confirm_pw_entry = ctk.CTkEntry(
+            content_frame,
+            placeholder_text="Confirm new password",
+            show="*",
+            font=ctk.CTkFont(size=14),
+            width=300,
+            height=35,
+            fg_color="white",  # Light background
+            text_color="#1F2937",  # Dark text
+            placeholder_text_color="#9CA3AF",  # Gray placeholder
+            border_color="#D1D5DB",  # Light border
+            border_width=1
+        )
+        self.confirm_pw_entry.grid(row=3, column=1, sticky="ew", pady=5)
+        
+        # Password message label
+        self.pw_message_label = ctk.CTkLabel(
+            content_frame,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color=SUCCESS_COLOR
+        )
+        self.pw_message_label.grid(row=4, column=0, columnspan=2, pady=5)
+        
+        # Change Password Button
+        change_pw_btn = ctk.CTkButton(
+            content_frame,
+            text="🔒 Change Password",
+            command=self.change_password,
+            fg_color=SECONDARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=200,
+            height=40,
+            corner_radius=10
+        )
+        change_pw_btn.grid(row=5, column=0, columnspan=2, pady=20)
+        
+        # Security Tips Section
+        tips_label = ctk.CTkLabel(
+            content_frame,
+            text="💡 Security Tips",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )        
+        tips_label.grid(row=6, column=0, columnspan=2, sticky="w", pady=(20, 15))
+        
+        tips_frame = ctk.CTkFrame(content_frame, fg_color="#F9FAFB", corner_radius=10, border_width=1, border_color="#E5E7EB")
+        tips_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=10)
+        
+        tips_text = """
+    • Use a strong password with at least 8 characters
+    • Include uppercase, lowercase, numbers, and symbols
+    • Don't share your password with anyone
+    • Log out from shared devices
+    • Enable two-factor authentication when available
+        """
+        
+        tips_display = ctk.CTkLabel(
+            tips_frame,
+            text=tips_text,
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_COLOR,
+            justify="left"
+        )
+        tips_display.pack(padx=20, pady=15)
+
+    def setup_settings_tab(self):
+        """Setup the settings tab"""
+        settings_tab = self.profile_tabview.tab("⚙️ Settings")
+        settings_tab.grid_columnconfigure(0, weight=1)
+          # Settings content frame - no scrolling needed with larger window
+        content_frame = ctk.CTkFrame(
+            settings_tab, 
+            fg_color="transparent",
+            corner_radius=0
+        )
+        content_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        content_frame.grid_columnconfigure(1, weight=1)
+        
+        # Preferences Section
+        prefs_label = ctk.CTkLabel(
+            content_frame,
+            text="🎨 Preferences",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        prefs_label.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 15))
+        
+        # Theme setting (placeholder for future enhancement)
+        ctk.CTkLabel(
+            content_frame,
+            text="Theme:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR
+        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.theme_var = ctk.StringVar(value="Light")
+        theme_menu = ctk.CTkOptionMenu(
+            content_frame,
+            values=["Light", "Dark", "Auto"],
+            variable=self.theme_var,
+            font=ctk.CTkFont(size=14),
+            width=200
+        )
+        theme_menu.grid(row=1, column=1, sticky="w", pady=5)
+        
+        # Notifications
+        ctk.CTkLabel(
+            content_frame,
+            text="Notifications:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR
+        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
+        
+        self.notifications_var = ctk.BooleanVar(value=True)
+        notifications_switch = ctk.CTkSwitch(
+            content_frame,
+            text="Enable notifications",
+            variable=self.notifications_var,
+            font=ctk.CTkFont(size=12)
+        )
+        notifications_switch.grid(row=2, column=1, sticky="w", pady=5)
+        
+        # Save Preferences Button
+        save_prefs_btn = ctk.CTkButton(
+            content_frame,
+            text="💾 Save Preferences",
+            command=self.save_preferences,
+            fg_color=PRIMARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=200,
+            height=40,
+            corner_radius=10
+        )
+        save_prefs_btn.grid(row=3, column=0, columnspan=2, pady=20)
+        
+        # Account Actions Section
+        actions_label = ctk.CTkLabel(
+            content_frame,
+            text="🚪 Account Actions",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        actions_label.grid(row=4, column=0, columnspan=2, sticky="w", pady=(20, 15))
+        
+        # Logout Button
+        logout_btn = ctk.CTkButton(
+            content_frame,
+            text="🚪 Logout",
+            command=self.logout_from_profile,
+            fg_color=SECONDARY_COLOR,
+            hover_color="#B91C1C",
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=200,
+            height=40,
+            corner_radius=10
+        )
+        logout_btn.grid(row=5, column=0, columnspan=2, pady=10)
+        
+        # App Information Section
+        info_label = ctk.CTkLabel(
+            content_frame,
+            text="ℹ️ App Information",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        info_label.grid(row=6, column=0, columnspan=2, sticky="w", pady=(20, 15))
+        
+        info_frame = ctk.CTkFrame(content_frame, fg_color=BACKGROUND_COLOR, corner_radius=10)
+        info_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=10)
+        
+        app_info = """
+🍽️ Swigato Food Delivery App
+Version: 1.0.0
+Developed with ❤️ using Python & CustomTkinter
+        """
+        
+        info_display = ctk.CTkLabel(
+            info_frame,
+            text=app_info,
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_COLOR,
             justify="center"
         )
-        heading_label.grid(row=0, column=0, pady=(18, 0), padx=20, sticky="n")
+        info_display.pack(padx=20, pady=15)
 
-        orders = get_orders_by_user_id(self.user.user_id)
-        orders = orders[:20]
-
-        # --- Scrollable Frame for Table ---
-        scroll_frame = ctk.CTkScrollableFrame(self.order_history_window, fg_color=FRAME_FG_COLOR, corner_radius=14, border_width=1, border_color=FRAME_BORDER_COLOR)
-        scroll_frame.grid(row=1, column=0, padx=24, pady=24, sticky="nsew")
-        scroll_frame.grid_columnconfigure(0, weight=1)
-        scroll_frame.grid_rowconfigure(0, weight=1)
-
-        headers = ["Order ID", "Restaurant", "Date", "Total (₹)", "Status", "Items", "Address"]
-        table_data = [headers]
-        
-        for order in orders:
-            date_str = order.order_date.strftime('%Y-%m-%d %H:%M') if hasattr(order.order_date, 'strftime') else str(order.order_date)
-            items_str = ", ".join([f"{item.name} x{item.quantity}" for item in getattr(order, 'items', [])])
-            if len(items_str) > 60:
-                items_str = items_str[:57] + "..."
+    def update_profile_info(self):
+        """Update user profile information"""
+        try:
+            # Get values from entries
+            new_username = self.username_entry.get().strip()
+            new_email = self.email_entry.get().strip()
+            new_address = self.address_entry.get().strip()
+            new_phone = self.phone_entry.get().strip()
             
-            address_str = order.delivery_address or "N/A"
-            if len(address_str) > 30:
-                address_str = address_str[:27] + "..."
+            # Validate required fields
+            if not new_username:
+                self.show_message("Username cannot be empty!", ERROR_COLOR)
+                return
             
-            table_data.append([
-                order.order_id,
-                order.restaurant_name,
-                date_str,                f"{order.total_amount:.2f}",
-                order.status,
-                items_str,
-                address_str
-            ])
-
-        if len(table_data) == 1:
-            ctk.CTkLabel(scroll_frame, text="No orders found.", font=ctk.CTkFont(size=12), text_color=TEXT_COLOR, fg_color="transparent").pack(expand=True, anchor="center", padx=20, pady=20)
-            return
-
-        # Create a custom order history display instead of using CTkTable for better color support
-        # Header row
-        header_frame = ctk.CTkFrame(scroll_frame, fg_color=FRAME_BORDER_COLOR, corner_radius=8)
-        header_frame.pack(fill="x", padx=8, pady=(8, 4))
-        header_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
-        
-        for i, header in enumerate(headers):
-            header_label = ctk.CTkLabel(
-                header_frame,
-                text=header,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color="white"
-            )
-            header_label.grid(row=0, column=i, padx=5, pady=8, sticky="ew")
-        
-        # Data rows with colored status
-        for row_idx, row_data in enumerate(table_data[1:]):  # Skip header
-            row_frame = ctk.CTkFrame(
-                scroll_frame, 
-                fg_color=FRAME_FG_COLOR if row_idx % 2 == 0 else BACKGROUND_COLOR,
-                corner_radius=4
-            )
-            row_frame.pack(fill="x", padx=8, pady=2)
-            row_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
+            # Update user object using the model methods
+            success = True
             
-            for col_idx, cell_data in enumerate(row_data):
-                if col_idx == 4:  # Status column
-                    status_color = self.get_status_color(cell_data)
-                    cell_label = ctk.CTkLabel(
-                        row_frame,
-                        text=f"● {cell_data}",
-                        font=ctk.CTkFont(size=11, weight="bold"),
-                        text_color=status_color
-                    )
-                else:
-                    cell_label = ctk.CTkLabel(
-                        row_frame,
-                        text=str(cell_data),
-                        font=ctk.CTkFont(size=11),
-                        text_color=TEXT_COLOR
-                    )
-                cell_label.grid(row=0, column=col_idx, padx=5, pady=6, sticky="ew")
-
-    def show_profile_panel(self):
-        # Destroy previous panel if exists
-        if hasattr(self, 'profile_panel') and self.profile_panel and self.profile_panel.winfo_exists():
-            self.profile_panel.destroy()
-      
-      
-        # Overlay to catch outside clicks
-        if hasattr(self, 'profile_overlay') and self.profile_overlay and self.profile_overlay.winfo_exists():
-            self.profile_overlay.destroy()
-        self.profile_overlay = ctk.CTkFrame(self, fg_color=SEMI_TRANSPARENT_OVERLAY, width=self.winfo_width(), height=self.winfo_height())
-        self.profile_overlay.place(relx=0, rely=0, relwidth=1.0, relheight=1.0)
-        self.profile_overlay.bind("<Button-1>", lambda e: self.hide_profile_panel())
-        # Side panel (wider)
-        self.profile_panel = ctk.CTkFrame(self.profile_overlay, fg_color=FRAME_FG_COLOR, width=420, corner_radius=16, border_width=2, border_color=FRAME_BORDER_COLOR)
-        self.profile_panel.place(relx=1.0, rely=0, anchor="ne", relheight=1.0, x=0, y=0)
-        # Prevent overlay click from closing if click inside panel
-        self.profile_panel.bind("<Button-1>", lambda e: e.stop_propagation() if hasattr(e, 'stop_propagation') else None)
-        # Tabs
-        tabview = ctk.CTkTabview(self.profile_panel, width=400, height=520, fg_color=FRAME_FG_COLOR)
-        tabview.pack(padx=16, pady=16, fill="both", expand=True)
-        tabview.add("Profile")
-        tabview.add("Password")
-        tabview.add("Logout")
-
-        # --- Profile Tab ---
-        tab_profile = tabview.tab("Profile")
-        ctk.CTkLabel(tab_profile, text="Account Info", font=ctk.CTkFont(size=22, weight="bold"), text_color=PRIMARY_COLOR).pack(pady=(24,8))
-        ctk.CTkLabel(tab_profile, text=f"Username: {self.user.username}", font=ctk.CTkFont(size=16, weight="bold"), text_color=TEXT_COLOR).pack(pady=(8,4))
-        ctk.CTkLabel(tab_profile, text=f"Email: {getattr(self.user, 'email', 'N/A')}", font=ctk.CTkFont(size=14), text_color=TEXT_COLOR).pack(pady=(4,4))
-        ctk.CTkLabel(tab_profile, text=f"Address: {getattr(self.user, 'address', 'N/A')}", font=ctk.CTkFont(size=14), text_color=TEXT_COLOR).pack(pady=(4,12))
-
-
-        # --- Password Tab ---
-        tab_password = tabview.tab("Password")
-        ctk.CTkLabel(tab_password, text="Change Password", font=ctk.CTkFont(size=20, weight="bold"), text_color=PRIMARY_COLOR).pack(pady=(24,8))
-        old_pw = ctk.CTkEntry(tab_password, show="*", placeholder_text="Current Password")
-        old_pw.pack(pady=6)
-        new_pw = ctk.CTkEntry(tab_password, show="*", placeholder_text="New Password")
-        new_pw.pack(pady=6)
-        confirm_pw = ctk.CTkEntry(tab_password, show="*", placeholder_text="Confirm New Password")
-        confirm_pw.pack(pady=6)
-        pw_msg = ctk.CTkLabel(tab_password, text="", text_color=SUCCESS_COLOR, font=ctk.CTkFont(size=12))
-        pw_msg.pack(pady=4)
-        def do_change_pw():
-            old = old_pw.get()
-            new = new_pw.get()
-            confirm = confirm_pw.get()
-            if not old or not new or not confirm:
-                pw_msg.configure(text="All fields required.", text_color=ERROR_COLOR)
-                return
-            if new != confirm:
-                pw_msg.configure(text="New passwords do not match.", text_color=ERROR_COLOR)
-                return
-            if not self.user.verify_password(old):
-                pw_msg.configure(text="Current password is incorrect.", text_color=ERROR_COLOR)
-                return
-            ok = self.user.update_password(new)
-            if ok:
-                pw_msg.configure(text="Password changed successfully!", text_color=SUCCESS_COLOR)
+            # Update username if changed
+            if new_username != self.user.username:
+                if not self.user.update_username(new_username):
+                    success = False
+            
+            # Update email if changed
+            if new_email != getattr(self.user, 'email', ''):
+                if not self.user.update_email(new_email if new_email else None):
+                    success = False
+            
+            # Update address if changed
+            if new_address != getattr(self.user, 'address', ''):
+                if not self.user.update_address(new_address if new_address else None):
+                    success = False
+            
+            # Update phone if changed
+            if new_phone != getattr(self.user, 'phone', ''):
+                if not self.user.update_phone(new_phone if new_phone else None):
+                    success = False
+            
+            if success:
+                # Update the welcome label in main screen
+                self.welcome_label.configure(text=f"Welcome back, {self.user.username}! 👋")
+                self.show_message("Profile updated successfully! ✅", SUCCESS_COLOR)
             else:
-                pw_msg.configure(text="Failed to change password.", text_color=ERROR_COLOR)
-        ctk.CTkButton(tab_password, text="Change Password", command=do_change_pw, fg_color=PRIMARY_COLOR, hover_color=BUTTON_HOVER_COLOR, text_color=TEXT_COLOR, font=ctk.CTkFont(size=14, weight="bold")).pack(pady=12)  # Added explicit size 14
-       
-       
-        # --- Logout Tab ---
-        tab_logout = tabview.tab("Logout")
-        ctk.CTkLabel(tab_logout, text="Are you sure you want to logout?", font=ctk.CTkFont(size=16, weight="bold"), text_color=PRIMARY_COLOR).pack(pady=(32,12))
-        ctk.CTkButton(tab_logout, text="Logout", fg_color=SECONDARY_COLOR, hover_color=BUTTON_HOVER_COLOR, text_color=BUTTON_TEXT_COLOR, font=ctk.CTkFont(size=14, weight="bold"), command=self.logout_callback).pack(pady=16)  # Added explicit size 14
-       
-       
-        # Close button (top right)
-        ctk.CTkButton(self.profile_panel, text="✕", width=32, height=32, fg_color=CLOSE_BUTTON_BG, text_color=CLOSE_BUTTON_TEXT, font=ctk.CTkFont(size=18, weight="bold"), command=self.hide_profile_panel).place(relx=1.0, rely=0.0, anchor="ne", x=-8, y=8)  # Increased from 16 to 18
+                self.show_message("Some updates failed! Please try again. ❌", ERROR_COLOR)
+                
+        except Exception as e:
+            log(f"Error updating profile: {e}")
+            self.show_message("Failed to update profile! ❌", ERROR_COLOR)
 
-    def hide_profile_panel(self):
-        if hasattr(self, 'profile_panel') and self.profile_panel and self.profile_panel.winfo_exists():
-            self.profile_panel.destroy()
-            self.profile_panel = None
-        if hasattr(self, 'profile_overlay') and self.profile_overlay and self.profile_overlay.winfo_exists():
-            self.profile_overlay.destroy()
-            self.profile_overlay = None
+    def change_password(self):
+        """Handle password change"""
+        current_pw = self.current_pw_entry.get()
+        new_pw = self.new_pw_entry.get()
+        confirm_pw = self.confirm_pw_entry.get()
+        
+        # Validate inputs
+        if not current_pw or not new_pw or not confirm_pw:
+            self.pw_message_label.configure(text="All password fields are required! ❌", text_color=ERROR_COLOR)
+            return
+        
+        if new_pw != confirm_pw:
+            self.pw_message_label.configure(text="New passwords do not match! ❌", text_color=ERROR_COLOR)
+            return
+        
+        if not self.user.verify_password(current_pw):
+            self.pw_message_label.configure(text="Current password is incorrect! ❌", text_color=ERROR_COLOR)
+            return
+        
+        # Update password
+        success = self.user.update_password(new_pw)
+        if success:
+            self.pw_message_label.configure(text="Password changed successfully! ✅", text_color=SUCCESS_COLOR)
+            # Clear password fields
+            self.current_pw_entry.delete(0, 'end')
+            self.new_pw_entry.delete(0, 'end')
+            self.confirm_pw_entry.delete(0, 'end')
+        else:
+            self.pw_message_label.configure(text="Failed to change password! ❌", text_color=ERROR_COLOR)
+
+    def save_preferences(self):
+        """Save user preferences"""
+        # Here you would typically save to database or config file
+        # For now, just show a success message
+        self.show_message("Preferences saved successfully! ✅", SUCCESS_COLOR)
+
+    def logout_from_profile(self):
+        """Logout from the profile window"""
+        self.profile_window.destroy()
+        self.logout_callback()
+
+    def show_message(self, message, color):
+        """Show a temporary message in the profile window"""
+        if hasattr(self, 'temp_message_label'):
+            self.temp_message_label.destroy()
+        
+        self.temp_message_label = ctk.CTkLabel(
+            self.profile_window,
+            text=message,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=color,
+            fg_color="transparent"
+        )
+        self.temp_message_label.place(relx=0.5, rely=0.95, anchor="center")
+          # Remove message after 3 seconds
+        self.profile_window.after(3000, lambda: self.temp_message_label.destroy() if hasattr(self, 'temp_message_label') else None)
 
     def load_favorites(self):
         """Load and display favorite restaurants and menu items with modern design"""
@@ -1029,14 +1486,554 @@ class MainAppScreen(ctk.CTkFrame):
                 add_to_cart_btn.grid(row=0, column=1, padx=(0, 20), pady=15, sticky="e")
                 row += 1
 
+    def display_restaurants_with_highlights(self, restaurants, restaurants_with_items, search_term):
+        """Display restaurants with highlighting for menu item matches"""
+        # Clear existing restaurant widgets
+        for widget in self.restaurant_scroll_frame.winfo_children():
+            widget.destroy()
+            
+        if not restaurants:
+            no_restaurants_label = ctk.CTkLabel(self.restaurant_scroll_frame,
+                                                text="No restaurants available at the moment.",
+                                                text_color=TEXT_COLOR,
+                                                font=ctk.CTkFont(size=16))
+            no_restaurants_label.grid(row=0, column=0, pady=20)
+            return
+
+        # Create a dict for quick lookup of restaurants with matching items
+        restaurants_with_matching_items = {r[0].restaurant_id: r[1] for r in restaurants_with_items}
+
+        for i, restaurant in enumerate(restaurants):
+            # Create modern restaurant card with enhanced visual design
+            restaurant_card = ctk.CTkFrame(
+                self.restaurant_scroll_frame,
+                fg_color=FRAME_FG_COLOR,
+                border_color=FRAME_BORDER_COLOR,
+                border_width=1,
+                corner_radius=16,
+                height=200
+            )
+            restaurant_card.grid(row=i, column=0, padx=10, pady=(0, 15), sticky="ew")
+            restaurant_card.grid_columnconfigure(0, weight=0)  # Image
+            restaurant_card.grid_columnconfigure(1, weight=1)  # Content
+            restaurant_card.grid_columnconfigure(2, weight=0)  # Actions
+            restaurant_card.grid_propagate(False)
+
+            # Restaurant Image section
+            image_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
+            image_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
+
+            # Load and display restaurant image
+            if restaurant.image_filename:
+                project_root = self.app_ref.project_root
+                image_path = os.path.join(project_root, "assets", "restaurants", restaurant.image_filename)
+                ctk_image = load_image(image_path, size=(140, 140))
+                if ctk_image:
+                    image_label = ctk.CTkLabel(image_frame, image=ctk_image, text="", corner_radius=12)
+                    image_label.pack()
+                else:
+                    # Fallback placeholder
+                    image_label = ctk.CTkLabel(image_frame, text="🍽️", font=ctk.CTkFont(size=48), 
+                                             width=140, height=140, fg_color=GRAY_TEXT_COLOR, 
+                                             text_color=BUTTON_TEXT_COLOR, corner_radius=12)
+                    image_label.pack()
+            else:
+                # Default placeholder
+                image_label = ctk.CTkLabel(image_frame, text="🍽️", font=ctk.CTkFont(size=48), 
+                                         width=140, height=140, fg_color=GRAY_TEXT_COLOR, 
+                                         text_color=BUTTON_TEXT_COLOR, corner_radius=12)
+                image_label.pack()
+
+            # Restaurant Details section
+            details_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
+            details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
+            details_frame.grid_columnconfigure(0, weight=1)
+
+            # Restaurant name with enhanced typography
+            name_label = ctk.CTkLabel(
+                details_frame, 
+                text=restaurant.name,
+                font=ctk.CTkFont(size=24, weight="bold"),
+                text_color=TEXT_COLOR,
+                anchor="w"
+            )
+            name_label.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+
+            # Cuisine type with modern badge design
+            cuisine_frame = ctk.CTkFrame(details_frame, fg_color=PRIMARY_COLOR, corner_radius=8, height=28)
+            cuisine_frame.grid(row=1, column=0, sticky="w", pady=(0, 12))
+            cuisine_frame.grid_propagate(False)
+            
+            cuisine_label = ctk.CTkLabel(
+                cuisine_frame, 
+                text=restaurant.cuisine_type,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="white"
+            )
+            cuisine_label.pack(padx=12, pady=6)
+
+            # Restaurant rating with star display
+            rating_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
+            rating_frame.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+
+            review_count = restaurant.get_review_count()
+            if review_count == 0:
+                rating_text = "No reviews yet"
+                rating_color = GRAY_TEXT_COLOR
+            else:
+                # Create star display
+                full_stars = int(restaurant.rating)
+                half_star = restaurant.rating - full_stars >= 0.5
+                stars = "★" * full_stars + ("⭐" if half_star else "") + "☆" * (5 - full_stars - (1 if half_star else 0))
+                rating_text = f"{stars} {restaurant.rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
+                rating_color = PRIMARY_COLOR
+
+            rating_label = ctk.CTkLabel(
+                rating_frame, 
+                text=rating_text,
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color=rating_color,
+                anchor="w"
+            )
+            rating_label.pack(side="left")
+
+            # Check if this restaurant has matching menu items and show them
+            if restaurant.restaurant_id in restaurants_with_matching_items:
+                matching_items = restaurants_with_matching_items[restaurant.restaurant_id]
+                
+                # Add a highlighted section for matching menu items
+                items_frame = ctk.CTkFrame(details_frame, fg_color="#FFF3CD", corner_radius=8, border_width=1, border_color="#FFE69C")
+                items_frame.grid(row=3, column=0, sticky="ew", pady=(8, 0))
+                
+                items_label = ctk.CTkLabel(
+                    items_frame,
+                    text=f"🍴 Found: {', '.join([item.name for item in matching_items[:3]])}{'...' if len(matching_items) > 3 else ''}",
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    text_color="#856404",
+                    anchor="w"
+                )
+                items_label.pack(padx=10, pady=6, fill="x")
+
+            # Action buttons section
+            action_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
+            action_frame.grid(row=0, column=2, padx=20, pady=20, sticky="ns")
+
+            # Heart/Favorite button with improved feedback
+            is_fav = self.user.is_favorite_restaurant(restaurant.restaurant_id)
+            heart_button = ctk.CTkButton(
+                action_frame,
+                text="♥" if is_fav else "♡",
+                width=50,
+                height=50,
+                fg_color=ERROR_COLOR if is_fav else FRAME_FG_COLOR,
+                text_color="white" if is_fav else ERROR_COLOR,
+                font=ctk.CTkFont(size=24),
+                hover_color=BUTTON_HOVER_COLOR,
+                corner_radius=25,
+                border_width=2 if not is_fav else 0,
+                border_color=ERROR_COLOR if not is_fav else ERROR_COLOR,
+                command=lambda r=restaurant: self._toggle_favorite_restaurant(r)
+            )
+            heart_button.grid(row=0, column=0, pady=(0, 12))
+
+            # View Menu button with modern design
+            view_menu_button = ctk.CTkButton(
+                action_frame,
+                text="View Menu →",
+                width=120,
+                height=45,
+                fg_color=PRIMARY_COLOR,
+                hover_color=BUTTON_HOVER_COLOR,
+                text_color=TEXT_COLOR,
+                font=ctk.CTkFont(size=14, weight="bold"),
+                corner_radius=12,
+                command=lambda r=restaurant: self.show_menu_callback(r)
+            )
+            view_menu_button.grid(row=1, column=0)
+
+    def on_search_change(self, event=None):
+        """Handle search text changes for real-time filtering"""
+        search_term = self.search_entry.get().lower().strip()
+        self.filter_restaurants(search_term)
+    
+    def filter_restaurants(self, search_term=""):
+        """Filter restaurants based on search term - includes restaurant names, cuisine types, and menu items"""
+        # Clear existing restaurant widgets
+        for widget in self.restaurant_scroll_frame.winfo_children():            widget.destroy()
+
+        all_restaurants = Restaurant.get_all()
+        
+        # Filter restaurants based on search term
+        if search_term:
+            filtered_restaurants = []
+            restaurants_with_matching_items = []
+            
+            for restaurant in all_restaurants:                # Check if restaurant name or cuisine matches
+                if (search_term in restaurant.name.lower() or 
+                    search_term in restaurant.cuisine_type.lower()):
+                    filtered_restaurants.append(restaurant)
+                else:
+                    # Check if any menu items match the search term
+                    menu_items = restaurant.menu  # Use the menu property instead of get_menu_items()
+                    matching_items = [
+                        item for item in menu_items 
+                        if (search_term in item.name.lower() or 
+                            search_term in item.description.lower())
+                    ]
+                    
+                    if matching_items:
+                        restaurants_with_matching_items.append((restaurant, matching_items))
+            
+            # Combine results: exact restaurant matches first, then restaurants with matching menu items
+            all_filtered_restaurants = filtered_restaurants + [r[0] for r in restaurants_with_matching_items]
+            
+            if not all_filtered_restaurants:
+                no_results_label = ctk.CTkLabel(
+                    self.restaurant_scroll_frame,
+                    text=f"No restaurants or menu items found for '{search_term}'",
+                    text_color=GRAY_TEXT_COLOR,
+                    font=ctk.CTkFont(size=16)
+                )
+                no_results_label.grid(row=0, column=0, pady=50)
+                return
+              # Display filtered restaurants with highlighting for menu item matches
+            self.display_restaurants_with_highlights(all_filtered_restaurants, restaurants_with_matching_items, search_term)
+        else:
+            # No search term - show all restaurants
+            all_restaurants = Restaurant.get_all()
+            self.display_restaurants(all_restaurants)
+
+    def show_filter_options(self):
+        """Show filter options dialog"""
+        messagebox.showinfo("Filter Options", "Advanced filtering coming soon!\n\nUse the search bar to find restaurants by name, cuisine type, or specific food items!")
+    
+    def display_restaurants(self, restaurants):
+        """Display a list of restaurants"""
+        # Clear existing restaurant widgets
+        for widget in self.restaurant_scroll_frame.winfo_children():
+            widget.destroy()
+            
+        if not restaurants:
+            no_restaurants_label = ctk.CTkLabel(self.restaurant_scroll_frame,
+                                                text="No restaurants available at the moment.",
+                                                text_color=TEXT_COLOR,
+                                                font=ctk.CTkFont(size=16))
+            no_restaurants_label.grid(row=0, column=0, pady=20)
+            return
+
+        for i, restaurant in enumerate(restaurants):
+            # Create modern restaurant card with enhanced visual design
+            restaurant_card = ctk.CTkFrame(
+                self.restaurant_scroll_frame,
+                fg_color=FRAME_FG_COLOR,
+                border_color=FRAME_BORDER_COLOR,
+                border_width=1,
+                corner_radius=16,
+                height=200
+            )
+            restaurant_card.grid(row=i, column=0, padx=10, pady=(0, 15), sticky="ew")
+            restaurant_card.grid_columnconfigure(0, weight=0)  # Image
+            restaurant_card.grid_columnconfigure(1, weight=1)  # Content
+            restaurant_card.grid_columnconfigure(2, weight=0)  # Actions
+            restaurant_card.grid_propagate(False)
+
+            # Restaurant Image section
+            image_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
+            image_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
+
+            # Load and display restaurant image
+            if restaurant.image_filename:
+                project_root = self.app_ref.project_root
+                image_path = os.path.join(project_root, "assets", "restaurants", restaurant.image_filename)
+                ctk_image = load_image(image_path, size=(140, 140))
+                if ctk_image:
+                    image_label = ctk.CTkLabel(image_frame, image=ctk_image, text="", corner_radius=12)
+                    image_label.pack()
+                else:
+                    # Fallback placeholder
+                    image_label = ctk.CTkLabel(image_frame, text="🍽️", font=ctk.CTkFont(size=48), 
+                                             width=140, height=140, fg_color=GRAY_TEXT_COLOR, 
+                                             text_color=BUTTON_TEXT_COLOR, corner_radius=12)
+                    image_label.pack()
+            else:
+                # Default placeholder
+                image_label = ctk.CTkLabel(image_frame, text="🍽️", font=ctk.CTkFont(size=48), 
+                                         width=140, height=140, fg_color=GRAY_TEXT_COLOR, 
+                                         text_color=BUTTON_TEXT_COLOR, corner_radius=12)
+                image_label.pack()
+
+            # Restaurant Details section
+            details_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
+            details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
+            details_frame.grid_columnconfigure(0, weight=1)
+
+            # Restaurant name with enhanced typography
+            name_label = ctk.CTkLabel(
+                details_frame, 
+                text=restaurant.name,
+                font=ctk.CTkFont(size=24, weight="bold"),
+                text_color=TEXT_COLOR,
+                anchor="w"
+            )
+            name_label.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+
+            # Cuisine type with modern badge design
+            cuisine_frame = ctk.CTkFrame(details_frame, fg_color=PRIMARY_COLOR, corner_radius=8, height=28)
+            cuisine_frame.grid(row=1, column=0, sticky="w", pady=(0, 12))
+            cuisine_frame.grid_propagate(False)
+            
+            cuisine_label = ctk.CTkLabel(
+                cuisine_frame, 
+                text=restaurant.cuisine_type,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="white"
+            )
+            cuisine_label.pack(padx=12, pady=6)
+
+            # Restaurant rating with star display
+            rating_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
+            rating_frame.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+
+            review_count = restaurant.get_review_count()
+            if review_count == 0:
+                rating_text = "No reviews yet"
+                rating_color = GRAY_TEXT_COLOR
+            else:
+                # Create star display
+                full_stars = int(restaurant.rating)
+                half_star = restaurant.rating - full_stars >= 0.5
+                stars = "★" * full_stars + ("⭐" if half_star else "") + "☆" * (5 - full_stars - (1 if half_star else 0))
+                rating_text = f"{stars} {restaurant.rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
+                rating_color = PRIMARY_COLOR
+
+            rating_label = ctk.CTkLabel(
+                rating_frame, 
+                text=rating_text,
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color=rating_color,
+                anchor="w"
+            )
+            rating_label.pack(side="left")
+
+            # Action buttons section
+            action_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
+            action_frame.grid(row=0, column=2, padx=20, pady=20, sticky="ns")
+
+            # Heart/Favorite button with improved feedback
+            is_fav = self.user.is_favorite_restaurant(restaurant.restaurant_id)
+            heart_button = ctk.CTkButton(
+                action_frame,
+                text="♥" if is_fav else "♡",
+                width=50,
+                height=50,
+                fg_color=ERROR_COLOR if is_fav else FRAME_FG_COLOR,
+                text_color="white" if is_fav else ERROR_COLOR,
+                font=ctk.CTkFont(size=24),
+                hover_color=BUTTON_HOVER_COLOR,
+                corner_radius=25,
+                border_width=2 if not is_fav else 0,
+                border_color=ERROR_COLOR if not is_fav else ERROR_COLOR,
+                command=lambda r=restaurant: self._toggle_favorite_restaurant(r)
+            )
+            heart_button.grid(row=0, column=0, pady=(0, 12))
+
+            # View Menu button with modern design
+            view_menu_button = ctk.CTkButton(
+                action_frame,
+                text="View Menu →",
+                width=120,
+                height=45,
+                fg_color=PRIMARY_COLOR,
+                hover_color=BUTTON_HOVER_COLOR,
+                text_color=TEXT_COLOR,
+                font=ctk.CTkFont(size=14, weight="bold"),
+                corner_radius=12,
+                command=lambda r=restaurant: self.show_menu_callback(r)
+            )
+            view_menu_button.grid(row=1, column=0)
+
+    def proceed_to_checkout(self):
+        """Handle checkout process within the main app"""
+        if hasattr(self.app_ref, 'cart') and self.app_ref.cart and self.app_ref.cart.items:
+            # Show checkout dialog within the main app instead of redirecting
+            self.show_checkout_dialog()
+        else:
+            # Show message if cart is empty
+            messagebox.showinfo("Empty Cart", "Your cart is empty! Add some items before checkout.")
+
+    def show_checkout_dialog(self):
+        """Show checkout dialog within the main app"""
+        # Create checkout dialog window
+        checkout_window = ctk.CTkToplevel(self)
+        checkout_window.title("Checkout")
+        checkout_window.geometry("600x500")
+        checkout_window.resizable(False, False)
+        checkout_window.grab_set()  # Make it modal
+        
+        # Center the window
+        screen_width = checkout_window.winfo_screenwidth()
+        screen_height = checkout_window.winfo_screenheight()
+        center_x = int(screen_width/2 - 300)
+        center_y = int(screen_height/2 - 250)
+        checkout_window.geometry(f"600x500+{center_x}+{center_y}")
+        
+        # Configure window with light theme
+        checkout_window.configure(fg_color="white")
+        checkout_window.grid_columnconfigure(0, weight=1)
+        checkout_window.grid_rowconfigure(0, weight=1)
+        
+        # Main frame
+        main_frame = ctk.CTkFrame(checkout_window, fg_color="white", corner_radius=0)
+        main_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(2, weight=1)
+        
+        # Header
+        header_label = ctk.CTkLabel(
+            main_frame,
+            text="🛒 Checkout",
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        header_label.grid(row=0, column=0, pady=(0, 20))
+        
+        # Order summary
+        cart_items = self.app_ref.cart.items
+        total_amount = sum(item.menu_item.price * item.quantity for item in cart_items.values())
+        
+        summary_frame = ctk.CTkFrame(main_frame, fg_color="#F9FAFB", corner_radius=10, border_width=1, border_color="#E5E7EB")
+        summary_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
+        summary_frame.grid_columnconfigure(0, weight=1)
+        
+        summary_label = ctk.CTkLabel(
+            summary_frame,
+            text="📋 Order Summary",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=TEXT_COLOR
+        )
+        summary_label.grid(row=0, column=0, pady=(15, 10))
+        
+        # List items
+        for i, cart_item in enumerate(cart_items.values()):
+            item_text = f"• {cart_item.menu_item.name} x{cart_item.quantity} = ₹{cart_item.menu_item.price * cart_item.quantity}"
+            item_label = ctk.CTkLabel(
+                summary_frame,
+                text=item_text,
+                font=ctk.CTkFont(size=12),
+                text_color=GRAY_TEXT_COLOR,
+                anchor="w"
+            )
+            item_label.grid(row=i+1, column=0, sticky="w", padx=20, pady=2)
+        
+        # Total
+        total_label = ctk.CTkLabel(
+            summary_frame,
+            text=f"💰 Total Amount: ₹{total_amount}",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=PRIMARY_COLOR
+        )
+        total_label.grid(row=len(cart_items)+1, column=0, pady=(10, 15))
+        
+        # Delivery address section
+        address_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        address_frame.grid(row=2, column=0, sticky="ew", pady=(0, 20))
+        address_frame.grid_columnconfigure(1, weight=1)
+        
+        address_label = ctk.CTkLabel(
+            address_frame,
+            text="📍 Delivery Address:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=TEXT_COLOR
+        )
+        address_label.grid(row=0, column=0, sticky="w", pady=(0, 10))
+        
+        self.address_entry = ctk.CTkEntry(
+            address_frame,
+            placeholder_text="Enter your delivery address...",
+            font=ctk.CTkFont(size=14),
+            height=40,
+            fg_color="white",
+            text_color="#1F2937",
+            placeholder_text_color="#9CA3AF",
+            border_color="#D1D5DB",
+            border_width=1
+        )
+        self.address_entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 20))
+        
+        # Pre-fill with user's address if available
+        if hasattr(self.user, 'address') and self.user.address:
+            self.address_entry.insert(0, self.user.address)
+        
+        # Buttons frame
+        buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        buttons_frame.grid(row=3, column=0, sticky="ew")
+        buttons_frame.grid_columnconfigure((0, 1), weight=1)
+        
+        # Cancel button
+        cancel_btn = ctk.CTkButton(
+            buttons_frame,
+            text="Cancel",
+            command=checkout_window.destroy,
+            fg_color=SECONDARY_COLOR,
+            hover_color="#B91C1C",
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=150,
+            height=40,
+            corner_radius=10
+        )
+        cancel_btn.grid(row=0, column=0, padx=(0, 10))
+        
+        # Place Order button
+        place_order_btn = ctk.CTkButton(
+            buttons_frame,
+            text="Place Order",
+            command=lambda: self.place_order(checkout_window),
+            fg_color=SUCCESS_COLOR,
+            hover_color="#388E3C",
+            text_color="white",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=150,
+            height=40,
+            corner_radius=10
+        )
+        place_order_btn.grid(row=0, column=1, padx=(10, 0))
+
+    def place_order(self, checkout_window):
+        """Place the order"""
+        delivery_address = self.address_entry.get().strip()
+        
+        if not delivery_address:
+            messagebox.showerror("Missing Address", "Please enter a delivery address!")
+            return
+        
+        try:
+            # Here you would integrate with your order placement logic
+            # For now, just show a success message
+            messagebox.showinfo("Order Placed!", f"Your order has been placed successfully!\n\nDelivery Address: {delivery_address}\n\nThank you for using Swigato!")
+            
+            # Clear the cart after successful order
+            if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+                self.app_ref.cart.clear_cart()
+                self.load_cart_items()  # Refresh cart display
+            
+            # Close checkout window            checkout_window.destroy()
+            
+        except Exception as e:
+            messagebox.showerror("Order Failed", f"Failed to place order: {str(e)}")
+
     def load_order_history(self):
-        """Load and display order history with modern design"""
+        """Load and display order history in the orders content area"""
         # Clear existing widgets
         for widget in self.orders_scroll_frame.winfo_children():
             widget.destroy()
 
-        orders = get_orders_by_user_id(self.user.user_id)
-        orders = orders[:20]  # Limit to latest 20 orders
+        # Get user orders
+        try:
+            orders = get_orders_by_user_id(self.user.user_id)
+        except Exception as e:
+            log(f"Error loading orders: {e}")
+            orders = []
 
         if not orders:
             # Modern empty state
@@ -1067,7 +2064,7 @@ class MainAppScreen(ctk.CTkFrame):
             
             empty_desc = ctk.CTkLabel(
                 empty_frame,
-                text="Your order history will appear here\nafter you make your first order.",
+                text="Browse restaurants and place your first order\nto see your order history here.",
                 font=ctk.CTkFont(size=14),
                 text_color=GRAY_TEXT_COLOR,
                 justify="center"
@@ -1075,670 +2072,284 @@ class MainAppScreen(ctk.CTkFrame):
             empty_desc.pack(pady=(0, 30))
             return
 
+        # Display orders
         for i, order in enumerate(orders):
             order_card = ctk.CTkFrame(
                 self.orders_scroll_frame,
+                fg_color=FRAME_FG_COLOR,
+                corner_radius=12,
+                border_width=1,
+                border_color=FRAME_BORDER_COLOR
+            )
+            order_card.grid(row=i, column=0, pady=(0, 10), padx=20, sticky="ew")
+            order_card.grid_columnconfigure(0, weight=1)
+            order_card.grid_columnconfigure(1, weight=0)
+
+            # Order details frame
+            details_frame = ctk.CTkFrame(order_card, fg_color="transparent")
+            details_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=15)
+            
+            # Order header
+            header_text = f"Order #{order.order_id}"
+            header_label = ctk.CTkLabel(
+                details_frame,
+                text=header_text,
+                font=ctk.CTkFont(size=16, weight="bold"),
+                text_color=TEXT_COLOR,
+                anchor="w"
+            )
+            header_label.pack(anchor="w")
+            
+            # Restaurant name
+            if hasattr(order, 'restaurant_name') and order.restaurant_name:
+                restaurant_label = ctk.CTkLabel(
+                    details_frame,
+                    text=f"🍽️ {order.restaurant_name}",
+                    font=ctk.CTkFont(size=14),
+                    text_color=TEXT_COLOR,
+                    anchor="w"
+                )
+                restaurant_label.pack(anchor="w", pady=(2, 0))
+            
+            # Total amount
+            total_label = ctk.CTkLabel(
+                details_frame,
+                text=f"💰 Total: ₹{order.total_amount}",
+                font=ctk.CTkFont(size=14),
+                text_color=TEXT_COLOR,
+                anchor="w"
+            )
+            total_label.pack(anchor="w", pady=(2, 0))
+            
+            # Order date if available
+            if hasattr(order, 'created_at') and order.created_at:
+                date_label = ctk.CTkLabel(
+                    details_frame,
+                    text=f"📅 {order.created_at}",
+                    font=ctk.CTkFont(size=12),
+                    text_color=GRAY_TEXT_COLOR,
+                    anchor="w"
+                )
+                date_label.pack(anchor="w", pady=(2, 0))
+
+            # Status badge
+            status_color = self.get_status_color(order.status)
+            status_frame = ctk.CTkFrame(order_card, fg_color=status_color, corner_radius=8, height=30)
+            status_frame.grid(row=0, column=1, padx=(0, 20), pady=15, sticky="e")
+            status_frame.grid_propagate(False)
+            
+            status_label = ctk.CTkLabel(
+                status_frame,
+                text=order.status,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="white"
+            )
+            status_label.pack(padx=12, pady=6)
+
+    def load_cart_items(self):
+        """Load and display cart items in the cart content area"""
+        # Clear existing widgets
+        for widget in self.cart_scroll_frame.winfo_children():
+            widget.destroy()
+
+        # Check if cart exists and has items
+        if not hasattr(self.app_ref, 'cart') or not self.app_ref.cart or not self.app_ref.cart.items:
+            # Modern empty state
+            empty_frame = ctk.CTkFrame(
+                self.cart_scroll_frame,
                 fg_color=FRAME_FG_COLOR,
                 corner_radius=16,
                 border_width=1,
                 border_color=FRAME_BORDER_COLOR
             )
-            order_card.grid(row=i, column=0, pady=(0, 15), padx=20, sticky="ew")
-            order_card.grid_columnconfigure(0, weight=1)
-
-            # Order header
-            header_frame = ctk.CTkFrame(order_card, fg_color="transparent")
-            header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(15, 10))
-            header_frame.grid_columnconfigure(0, weight=1)
-            header_frame.grid_columnconfigure(1, weight=0)
-
-            order_title = ctk.CTkLabel(
-                header_frame,
-                text=f"Order #{order.order_id}",
-                font=ctk.CTkFont(size=18, weight="bold"),
-                text_color=TEXT_COLOR,
-                anchor="w"
-            )
-            order_title.grid(row=0, column=0, sticky="w")
-
-            order_total = ctk.CTkLabel(
-                header_frame,
-                text=f"₹{order.total_amount:.2f}",
-                font=ctk.CTkFont(size=16, weight="bold"),
-                text_color=PRIMARY_COLOR
-            )
-            order_total.grid(row=0, column=1, sticky="e")            # Order details with color-coded status
-            details_frame = ctk.CTkFrame(order_card, fg_color="transparent")
-            details_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 15))
-            details_frame.grid_columnconfigure(0, weight=1)
-            details_frame.grid_columnconfigure(1, weight=0)
+            empty_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
             
-            # Date and restaurant info
-            date_label = ctk.CTkLabel(
-                details_frame,
-                text=f"📅 {order.order_date}",
-                font=ctk.CTkFont(size=13),
-                text_color=GRAY_TEXT_COLOR,
-                anchor="w"
-            )
-            date_label.grid(row=0, column=0, sticky="w")
-            
-            # Status with color coding
-            status_color = self.get_status_color(order.status)
-            status_label = ctk.CTkLabel(
-                details_frame,
-                text=f"● {order.status}",
-                font=ctk.CTkFont(size=13, weight="bold"),
-                text_color=status_color,
-                anchor="e"            )
-            status_label.grid(row=0, column=1, sticky="e")
-
-    def load_cart_items(self):
-        """Load and display cart items with modern design"""
-        # Clear existing widgets
-        for widget in self.cart_scroll_frame.winfo_children():
-            widget.destroy()
-
-        if hasattr(self.app_ref, 'cart') and self.app_ref.cart and self.app_ref.cart.items:                # Display cart items with enhanced styling
-            for i, (item_id, cart_item) in enumerate(self.app_ref.cart.items.items()):
-                item_card = ctk.CTkFrame(
-                    self.cart_scroll_frame,
-                    fg_color=FRAME_FG_COLOR,
-                    corner_radius=16,
-                    border_width=1,
-                    border_color=FRAME_BORDER_COLOR
-                )
-                item_card.grid(row=i, column=0, pady=(0, 15), padx=20, sticky="ew")
-                item_card.grid_columnconfigure(0, weight=1)
-
-                # Top row with item name and total price
-                top_frame = ctk.CTkFrame(item_card, fg_color="transparent")
-                top_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(15, 5))
-                top_frame.grid_columnconfigure(0, weight=1)
-                
-                # Item name
-                item_label = ctk.CTkLabel(
-                    top_frame,
-                    text=f"{cart_item.menu_item.name}",
-                    font=ctk.CTkFont(size=16, weight="bold"),
-                    text_color=TEXT_COLOR,
-                    anchor="w"
-                )
-                item_label.grid(row=0, column=0, sticky="w")
-                
-                # Total price for this item
-                item_total = cart_item.quantity * cart_item.menu_item.price
-                item_total_label = ctk.CTkLabel(
-                    top_frame,
-                    text=f"₹{item_total:.2f}",
-                    font=ctk.CTkFont(size=16, weight="bold"),
-                    text_color=PRIMARY_COLOR,
-                    anchor="e"
-                )
-                item_total_label.grid(row=0, column=1, sticky="e")
-
-                # Bottom row with quantity and unit price
-                details_label = ctk.CTkLabel(
-                    item_card,
-                    text=f"Qty: {cart_item.quantity} • ₹{cart_item.menu_item.price} each",
-                    font=ctk.CTkFont(size=13),
-                    text_color=GRAY_TEXT_COLOR,
-                    anchor="w"
-                )
-                details_label.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 15))# Add modern checkout section
-            total_amount = self.app_ref.cart.get_total_price()
-              # Modern checkout container with elegant styling
-            checkout_container = ctk.CTkFrame(
-                self.cart_scroll_frame,
-                fg_color=FRAME_FG_COLOR,
-                corner_radius=20,
-                border_width=1,
-                border_color=MODERN_BORDER
-            )
-            checkout_container.grid(row=len(self.app_ref.cart.items), column=0, pady=(30, 20), padx=20, sticky="ew")
-            checkout_container.grid_columnconfigure(0, weight=1)
-            
-            # Order summary header
-            summary_header = ctk.CTkLabel(
-                checkout_container,
-                text="Order Summary",
-                font=ctk.CTkFont(size=18, weight="bold"),
-                text_color=TEXT_COLOR
-            )
-            summary_header.grid(row=0, column=0, pady=(25, 15), padx=25, sticky="w")
-            
-            # Subtotal row
-            subtotal_frame = ctk.CTkFrame(checkout_container, fg_color="transparent")
-            subtotal_frame.grid(row=1, column=0, pady=(0, 8), padx=25, sticky="ew")
-            subtotal_frame.grid_columnconfigure(0, weight=1)
-            
-            ctk.CTkLabel(
-                subtotal_frame,
-                text="Subtotal",
-                font=ctk.CTkFont(size=14),
-                text_color=GRAY_TEXT_COLOR
-            ).grid(row=0, column=0, sticky="w")
-            
-            ctk.CTkLabel(
-                subtotal_frame,
-                text=f"₹{total_amount:.2f}",
-                font=ctk.CTkFont(size=14, weight="bold"),
-                text_color=TEXT_COLOR
-            ).grid(row=0, column=1, sticky="e")
-            
-            # Delivery fee row
-            delivery_frame = ctk.CTkFrame(checkout_container, fg_color="transparent")
-            delivery_frame.grid(row=2, column=0, pady=(0, 8), padx=25, sticky="ew")
-            delivery_frame.grid_columnconfigure(0, weight=1)
-            
-            ctk.CTkLabel(
-                delivery_frame,
-                text="Delivery Fee",
-                font=ctk.CTkFont(size=14),
-                text_color=GRAY_TEXT_COLOR
-            ).grid(row=0, column=0, sticky="w")
-            
-            ctk.CTkLabel(
-                delivery_frame,
-                text="Free",
-                font=ctk.CTkFont(size=14, weight="bold"),
-                text_color=SUCCESS_COLOR
-            ).grid(row=0, column=1, sticky="e")
-            
-            # Divider line
-            divider = ctk.CTkFrame(
-                checkout_container,
-                fg_color=MODERN_BORDER,
-                height=1
-            )
-            divider.grid(row=3, column=0, pady=(15, 15), padx=25, sticky="ew")
-            
-            # Total row with emphasis
-            total_frame = ctk.CTkFrame(checkout_container, fg_color="transparent")
-            total_frame.grid(row=4, column=0, pady=(0, 25), padx=25, sticky="ew")
-            total_frame.grid_columnconfigure(0, weight=1)
-            
-            ctk.CTkLabel(
-                total_frame,
-                text="Total",
-                font=ctk.CTkFont(size=18, weight="bold"),
-                text_color=TEXT_COLOR
-            ).grid(row=0, column=0, sticky="w")
-            
-            ctk.CTkLabel(
-                total_frame,
-                text=f"₹{total_amount:.2f}",
-                font=ctk.CTkFont(size=20, weight="bold"),
-                text_color=PRIMARY_COLOR
-            ).grid(row=0, column=1, sticky="e")
-              # Modern gradient checkout button
-            checkout_button = ctk.CTkButton(
-                self.cart_scroll_frame,
-                text="🛍️ Proceed to Checkout",
-                command=self.handle_checkout,
-                fg_color=PRIMARY_COLOR,
-                hover_color=BUTTON_HOVER_COLOR,
-                text_color="white",
-                font=ctk.CTkFont(size=16, weight="bold"),
-                height=56,
-                corner_radius=20,
-                border_width=0            )
-            checkout_button.grid(row=len(self.app_ref.cart.items) + 1, column=0, pady=(10, 30), padx=20, sticky="ew")
-
-        else:            # Modern empty cart state with enhanced styling
-            empty_frame = ctk.CTkFrame(
-                self.cart_scroll_frame,
-                fg_color=FRAME_FG_COLOR,
-                corner_radius=24,
-                border_width=1,
-                border_color=MODERN_BORDER
-            )
-            empty_frame.grid(row=0, column=0, padx=20, pady=40, sticky="ew")
-            
-            # Empty cart icon with gradient effect
             empty_icon = ctk.CTkLabel(
                 empty_frame,
                 text="🛒",
-                font=ctk.CTkFont(size=64),
+                font=ctk.CTkFont(size=48),
                 text_color=GRAY_TEXT_COLOR
             )
-            empty_icon.pack(pady=(40, 15))
+            empty_icon.pack(pady=(30, 10))
             
-            # Main empty state message
             empty_label = ctk.CTkLabel(
                 empty_frame,
                 text="Your cart is empty!",
-                font=ctk.CTkFont(size=24, weight="bold"),
+                font=ctk.CTkFont(size=20, weight="bold"),
                 text_color=TEXT_COLOR
             )
-            empty_label.pack(pady=(0, 8))
+            empty_label.pack(pady=(0, 5))
             
-            # Descriptive text
             empty_desc = ctk.CTkLabel(
                 empty_frame,
-                text="Discover amazing restaurants and add\ndelicious items to your cart.",
-                font=ctk.CTkFont(size=16),
+                text="Browse restaurants and add items to your cart\nto see them here.",
+                font=ctk.CTkFont(size=14),
                 text_color=GRAY_TEXT_COLOR,
                 justify="center"
             )
-            empty_desc.pack(pady=(0, 25))
+            empty_desc.pack(pady=(0, 30))
+            return        # Display cart items
+        cart_items = self.app_ref.cart.items
+        total_amount = 0
+        
+        for i, cart_item in enumerate(cart_items.values()):
+            menu_item = cart_item.menu_item
+            quantity = cart_item.quantity
+            item_total = menu_item.price * quantity
+            total_amount += item_total
             
-            # Call-to-action button to browse restaurants
-            browse_button = ctk.CTkButton(
-                empty_frame,
-                text="🍽️ Browse Restaurants",
-                command=lambda: self.show_restaurants_content(),                fg_color=PRIMARY_COLOR,
-                hover_color=BUTTON_HOVER_COLOR,
-                text_color="white",
-                font=ctk.CTkFont(size=16, weight="bold"),
-                height=48,
-                corner_radius=16,
-                width=220
+            item_card = ctk.CTkFrame(
+                self.cart_scroll_frame,
+                fg_color=FRAME_FG_COLOR,
+                corner_radius=12,
+                border_width=1,
+                border_color=FRAME_BORDER_COLOR
             )
-            browse_button.pack(pady=(0, 40))
+            item_card.grid(row=i, column=0, pady=(0, 10), padx=20, sticky="ew")
+            item_card.grid_columnconfigure(0, weight=1)
+            item_card.grid_columnconfigure(1, weight=0)
+            item_card.grid_columnconfigure(2, weight=0)
 
-    def handle_checkout(self):
-        """Handle checkout process from the cart"""
-        if hasattr(self.app_ref, 'handle_checkout'):
-            self.app_ref.handle_checkout()
-        else:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", "Checkout functionality not available")
-
-    def show_profile_popup(self):
-        """Show modern profile popup with enhanced styling and full functionality"""
-        # Destroy any previous profile window
-        if hasattr(self, 'profile_window') and self.profile_window:
-            self.profile_window.destroy()
+            # Item details
+            details_frame = ctk.CTkFrame(item_card, fg_color="transparent")
+            details_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=15)
             
-        self.profile_window = ctk.CTkToplevel(self)
-        self.profile_window.title("Profile")
-        self.profile_window.geometry("500x650")
-        self.profile_window.configure(fg_color=BACKGROUND_COLOR)
-        
-        # Set Swigato icon
-        set_swigato_icon(self.profile_window)
-        
-        # Center the window
-        self.profile_window.grab_set()
-        
-        # Calculate position to center the window
-        self.profile_window.update_idletasks()
-        x = (self.profile_window.winfo_screenwidth() // 2) - (500 // 2)
-        y = (self.profile_window.winfo_screenheight() // 2) - (650 // 2)
-        self.profile_window.geometry(f"500x650+{x}+{y}")
-        
-        # Modern header
-        header_frame = ctk.CTkFrame(self.profile_window, fg_color="transparent")
-        header_frame.pack(fill="x", padx=30, pady=(30, 20))
-        
-        profile_icon = ctk.CTkLabel(
-            header_frame,
-            text="👤",
-            font=ctk.CTkFont(size=40),
-            text_color=PRIMARY_COLOR
-        )
-        profile_icon.pack(pady=(0, 10))
-        
-        profile_title = ctk.CTkLabel(
-            header_frame,
-            text="Your Profile",
-            font=ctk.CTkFont(size=24, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        profile_title.pack()
-        
-        # Modern tabview for profile sections
-        tabview = ctk.CTkTabview(
-            self.profile_window,
-            corner_radius=16,
-            border_width=1,
-            border_color=FRAME_BORDER_COLOR,
-            fg_color=FRAME_FG_COLOR
-        )
-        tabview.pack(fill="both", expand=True, padx=30, pady=(0, 30))
-        
-        # Account Info Tab
-        tabview.add("Account")
-        account_tab = tabview.tab("Account")
-        
-        info_frame = ctk.CTkFrame(account_tab, fg_color=BACKGROUND_COLOR, corner_radius=12)
-        info_frame.pack(fill="x", padx=20, pady=20)
-        
-        username_label = ctk.CTkLabel(
-            info_frame,
-            text=f"Username: {self.user.username}",
-            font=ctk.CTkFont(size=16),
-            text_color=TEXT_COLOR,
-            anchor="w"
-        )
-        username_label.pack(fill="x", padx=20, pady=(20, 10))
-        
-        if hasattr(self.user, 'email') and self.user.email:
-            email_label = ctk.CTkLabel(
-                info_frame,
-                text=f"Email: {self.user.email}",
-                font=ctk.CTkFont(size=16),
+            item_label = ctk.CTkLabel(
+                details_frame,
+                text=f"🍽️ {menu_item.name}",
+                font=ctk.CTkFont(size=16, weight="bold"),
                 text_color=TEXT_COLOR,
                 anchor="w"
             )
-            email_label.pack(fill="x", padx=20, pady=(0, 20))
-        
-        # Change Username Tab
-        tabview.add("Username")
-        username_tab = tabview.tab("Username")
-        
-        username_frame = ctk.CTkFrame(username_tab, fg_color=BACKGROUND_COLOR, corner_radius=12)
-        username_frame.pack(fill="x", padx=20, pady=20)
-        
-        username_title = ctk.CTkLabel(
-            username_frame,
-            text="Change Username",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        username_title.pack(pady=(20, 15))
-        
-        # Current username display
-        current_username_label = ctk.CTkLabel(
-            username_frame,
-            text=f"Current Username: {self.user.username}",
-            font=ctk.CTkFont(size=14),
-            text_color=GRAY_TEXT_COLOR
-        )
-        current_username_label.pack(pady=(0, 15))
-        
-        # New username entry
-        new_username_label = ctk.CTkLabel(
-            username_frame,
-            text="New Username:",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        new_username_label.pack(anchor="w", padx=20)
-        
-        self.new_username_entry = ctk.CTkEntry(
-            username_frame,
-            placeholder_text="Enter new username",
-            font=ctk.CTkFont(size=14),
-            width=300,
-            height=40,
-            fg_color=ENTRY_BG_COLOR,
-            border_color=FRAME_BORDER_COLOR,
-            text_color=TEXT_COLOR
-        )
-        self.new_username_entry.pack(pady=(5, 15), padx=20)
-        
-        change_username_btn = ctk.CTkButton(
-            username_frame,
-            text="Change Username",
-            command=self.change_username,
-            fg_color=PRIMARY_COLOR,
-            hover_color=BUTTON_HOVER_COLOR,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            corner_radius=12,
-            height=40
-        )
-        change_username_btn.pack(pady=(0, 20))
-        
-        # Change Password Tab
-        tabview.add("Password")
-        password_tab = tabview.tab("Password")
-        
-        password_frame = ctk.CTkFrame(password_tab, fg_color=BACKGROUND_COLOR, corner_radius=12)
-        password_frame.pack(fill="x", padx=20, pady=20)
-        
-        password_title = ctk.CTkLabel(
-            password_frame,
-            text="Change Password",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        password_title.pack(pady=(20, 15))
-        
-        # Current password
-        current_password_label = ctk.CTkLabel(
-            password_frame,
-            text="Current Password:",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        current_password_label.pack(anchor="w", padx=20)
-        
-        self.current_password_entry = ctk.CTkEntry(
-            password_frame,
-            placeholder_text="Enter current password",
-            show="*",
-            font=ctk.CTkFont(size=14),
-            width=300,
-            height=40,
-            fg_color=ENTRY_BG_COLOR,
-            border_color=FRAME_BORDER_COLOR,
-            text_color=TEXT_COLOR
-        )
-        self.current_password_entry.pack(pady=(5, 10), padx=20)
-        
-        # New password
-        new_password_label = ctk.CTkLabel(
-            password_frame,
-            text="New Password:",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        new_password_label.pack(anchor="w", padx=20)
-        
-        self.new_password_entry = ctk.CTkEntry(
-            password_frame,
-            placeholder_text="Enter new password",
-            show="*",
-            font=ctk.CTkFont(size=14),
-            width=300,
-            height=40,
-            fg_color=ENTRY_BG_COLOR,
-            border_color=FRAME_BORDER_COLOR,
-            text_color=TEXT_COLOR
-        )
-        self.new_password_entry.pack(pady=(5, 10), padx=20)
-        
-        # Confirm new password
-        confirm_password_label = ctk.CTkLabel(
-            password_frame,
-            text="Confirm New Password:",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR
-        )
-        confirm_password_label.pack(anchor="w", padx=20)
-        
-        self.confirm_password_entry = ctk.CTkEntry(
-            password_frame,
-            placeholder_text="Confirm new password",
-            show="*",
-            font=ctk.CTkFont(size=14),
-            width=300,
-            height=40,
-            fg_color=ENTRY_BG_COLOR,
-            border_color=FRAME_BORDER_COLOR,
-            text_color=TEXT_COLOR
-        )
-        self.confirm_password_entry.pack(pady=(5, 15), padx=20)
-        
-        change_password_btn = ctk.CTkButton(
-            password_frame,
-            text="Change Password",
-            command=self.change_password,
-            fg_color=PRIMARY_COLOR,
-            hover_color=BUTTON_HOVER_COLOR,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            corner_radius=12,
-            height=40
-        )
-        change_password_btn.pack(pady=(0, 20))
-          # Settings Tab
-        tabview.add("Settings")
-        settings_tab = tabview.tab("Settings")
-        
-        settings_frame = ctk.CTkFrame(settings_tab, fg_color=BACKGROUND_COLOR, corner_radius=12)
-        settings_frame.pack(fill="x", padx=20, pady=20)
-        
-        # Placeholder for future settings
-        settings_label = ctk.CTkLabel(
-            settings_frame,
-            text="More settings coming soon!",
-            font=ctk.CTkFont(size=16),
-            text_color=GRAY_TEXT_COLOR
-        )
-        settings_label.pack(pady=40)
-
-    def change_username(self):
-        """Handle username change"""
-        new_username = self.new_username_entry.get().strip()
-        
-        if not new_username:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", "Please enter a new username.")
-            return
-        
-        if new_username == self.user.username:
-            import tkinter.messagebox as msgbox
-            msgbox.showwarning("Warning", "New username is the same as current username.")
-            return
-        
-        try:
-            # Check if username already exists
-            from users.models import User
-            if User.get_by_username(new_username):
-                import tkinter.messagebox as msgbox
-                msgbox.showerror("Error", "Username already exists. Please choose a different one.")
-                return
+            item_label.pack(anchor="w")
             
-            # Update username
-            success = self.user.update_username(new_username)
-            if success:
-                import tkinter.messagebox as msgbox
-                msgbox.showinfo("Success", "Username changed successfully!")
-                # Update the welcome label
-                self.welcome_label.configure(text=f"Welcome back, {self.user.username}! 👋")
-                # Clear the entry
-                self.new_username_entry.delete(0, 'end')
-                # Close profile window
-                if hasattr(self, 'profile_window') and self.profile_window:
-                    self.profile_window.destroy()
-            else:
-                import tkinter.messagebox as msgbox
-                msgbox.showerror("Error", "Failed to change username. Please try again.")
-        except Exception as e:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", f"An error occurred: {str(e)}")
+            price_label = ctk.CTkLabel(
+                details_frame,
+                text=f"💰 ₹{menu_item.price} x {quantity} = ₹{item_total}",
+                font=ctk.CTkFont(size=12),
+                text_color=GRAY_TEXT_COLOR,
+                anchor="w"
+            )
+            price_label.pack(anchor="w", pady=(2, 0))
 
-    def change_password(self):
-        """Handle password change"""
-        current_password = self.current_password_entry.get()
-        new_password = self.new_password_entry.get()
-        confirm_password = self.confirm_password_entry.get()
-        
-        if not all([current_password, new_password, confirm_password]):
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", "Please fill in all password fields.")
-            return
-        
-        if new_password != confirm_password:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", "New passwords do not match.")
-            return
-        if len(new_password) < 6:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", "New password must be at least 6 characters long.")
-            return
-        
-        try:
-            # Verify current password using the user object's method
-            if not self.user.verify_password(current_password):
-                import tkinter.messagebox as msgbox
-                msgbox.showerror("Error", "Current password is incorrect.")
-                return
+            # Quantity controls
+            qty_frame = ctk.CTkFrame(item_card, fg_color="transparent")
+            qty_frame.grid(row=0, column=1, padx=(0, 10), pady=15)
             
-            # Update password
-            success = self.user.update_password(new_password)
-            if success:
-                import tkinter.messagebox as msgbox
-                msgbox.showinfo("Success", "Password changed successfully!")
-                # Clear the entries
-                self.current_password_entry.delete(0, 'end')
-                self.new_password_entry.delete(0, 'end')
-                self.confirm_password_entry.delete(0, 'end')
-                # Close profile window
-                if hasattr(self, 'profile_window') and self.profile_window:
-                    self.profile_window.destroy()
-            else:
-                import tkinter.messagebox as msgbox
-                msgbox.showerror("Error", "Failed to change password. Please try again.")
-        except Exception as e:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", f"An error occurred: {str(e)}")
+            qty_label = ctk.CTkLabel(
+                qty_frame,
+                text=f"Qty: {quantity}",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=TEXT_COLOR
+            )
+            qty_label.pack()
+
+            # Remove button
+            remove_btn = ctk.CTkButton(
+                item_card,
+                text="Remove",
+                command=lambda item=menu_item: self.remove_from_cart(item),
+                fg_color=SECONDARY_COLOR,
+                hover_color=BUTTON_HOVER_COLOR,
+                text_color="white",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                width=80,
+                height=30,
+                corner_radius=8
+            )
+            remove_btn.grid(row=0, column=2, padx=(0, 20), pady=15)
+
+        # Total amount section
+        total_frame = ctk.CTkFrame(
+            self.cart_scroll_frame,
+            fg_color=PRIMARY_COLOR,
+            corner_radius=12,
+            border_width=1,
+            border_color=FRAME_BORDER_COLOR
+        )
+        total_frame.grid(row=len(cart_items), column=0, pady=(20, 10), padx=20, sticky="ew")
+        
+        total_label = ctk.CTkLabel(
+            total_frame,
+            text=f"🛒 Total Amount: ₹{total_amount}",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color="white"
+        )
+        total_label.pack(pady=15)        # Checkout button
+        checkout_btn = ctk.CTkButton(
+            self.cart_scroll_frame,
+            text="Proceed to Checkout",
+            command=self.proceed_to_checkout,  # Use internal checkout method
+            fg_color=SUCCESS_COLOR,
+            hover_color="#388E3C",
+            text_color="white",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            width=200,
+            height=40,
+            corner_radius=12
+        )
+        checkout_btn.grid(row=len(cart_items) + 1, column=0, pady=(10, 20))
 
     def get_status_color(self, status):
-        """Get color code for order status"""
+        """Get color for order status"""
         status_colors = {
-            "Pending Confirmation": "#DC3545",  # Red
-            "Preparing": "#FFC107",             # Orange
-            "Confirmed": "#17A2B8",             # Teal/Light Blue
-            "Out for Delivery": "#2ECC71",      # Bright Green
-            "Delivered": "#008000",             # Darker Green
-            "Cancelled": "#6C757D",             # Muted Grey
-            "Failed": "#A50000"                 # Dark Red
+            'pending': '#FFA500',      # Orange
+            'confirmed': '#4CAF50',    # Green  
+            'preparing': '#2196F3',    # Blue
+            'out_for_delivery': '#FF9800',  # Amber
+            'delivered': '#8BC34A',    # Light Green
+            'cancelled': '#F44336',    # Red
+            'completed': '#4CAF50'     # Green
         }
-        return status_colors.get(status, GRAY_TEXT_COLOR)  # Default to gray if status not found
+        return status_colors.get(status.lower(), '#757575')  # Default gray
 
     def add_to_cart_from_favorites(self, menu_item):
-        """Add a favorite menu item to the cart"""
-        try:
-            # Ensure cart exists
-            if not hasattr(self.app_ref, 'cart') or not self.app_ref.cart:
-                self.app_ref.cart = Cart(user_id=self.user.user_id)
+        """Add a menu item to cart from favorites"""
+        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:            # Set the current_restaurant to the menu item's restaurant if available
+            if hasattr(menu_item, 'restaurant_id') and menu_item.restaurant_id:
+                rest_obj = Restaurant.get_by_id(menu_item.restaurant_id)
+                if rest_obj:
+                    self.app_ref.current_restaurant = rest_obj
             
             # Add item to cart
-            success = self.app_ref.cart.add_item(menu_item, quantity=1)
-            
-            if success:                # Show subtle success toast
-                try:
-                    # Create a temporary success notification
-                    success_frame = ctk.CTkFrame(
-                        self.favorites_scroll_frame,
-                        fg_color="#2ECC71",
-                        corner_radius=8,
-                        width=250,
-                        height=40
-                    )
-                    success_frame.place(relx=0.5, rely=0.0, anchor="n", y=10)
-                    
-                    success_label = ctk.CTkLabel(
-                        success_frame,
-                        text=f"✓ {menu_item.name} added to cart!",
-                        font=ctk.CTkFont(size=12, weight="bold"),
-                        text_color="white"
-                    )
-                    success_label.pack(pady=10)
-                    
-                    # Remove the notification after 2 seconds
-                    def remove_notification():
-                        if success_frame.winfo_exists():
-                            success_frame.destroy()
-                    
-                    self.after(2000, remove_notification)
-                except:
-                    # Fallback - just log success
-                    pass
-                
-                # Update cart display if cart tab is active
-                if hasattr(self, 'current_nav_tab') and self.current_nav_tab == "cart":
-                    self.load_cart_items()
-                    
-                log(f"Added {menu_item.name} to cart from favorites")
+            added = self.app_ref.cart.add_item(menu_item, 1)
+            if added:
+                # Show success message
+                success_label = ctk.CTkLabel(
+                    self.favorites_scroll_frame,
+                    text=f"✅ '{menu_item.name}' added to cart!",
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    text_color=SUCCESS_COLOR
+                )
+                success_label.grid(row=999, column=0, pady=10)
+                # Remove the message after 3 seconds
+                self.after(3000, lambda: success_label.destroy() if success_label.winfo_exists() else None)
             else:
-                import tkinter.messagebox as msgbox
-                msgbox.showerror("Error", f"Failed to add {menu_item.name} to cart")
-                
-        except Exception as e:
-            import tkinter.messagebox as msgbox
-            msgbox.showerror("Error", f"An error occurred while adding to cart: {str(e)}")
-            log(f"Error adding {menu_item.name} to cart: {str(e)}")
+                # Show error message
+                error_label = ctk.CTkLabel(
+                    self.favorites_scroll_frame,
+                    text=f"❌ Failed to add '{menu_item.name}' to cart",
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    text_color=ERROR_COLOR
+                )
+                error_label.grid(row=999, column=0, pady=10)
+                # Remove the message after 3 seconds
+                self.after(3000, lambda: error_label.destroy() if error_label.winfo_exists() else None)
+        else:
+            # Show error - cart not available
+            error_label = ctk.CTkLabel(
+                self.favorites_scroll_frame,
+                text="❌ Cart not available",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=ERROR_COLOR
+            )
+            error_label.grid(row=999, column=0, pady=10)
+            # Remove the message after 3 seconds
+            self.after(3000, lambda: error_label.destroy() if error_label.winfo_exists() else None)
+
+    def remove_from_cart(self, menu_item):
+        """Remove an item from the cart"""
+        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+            self.app_ref.cart.remove_item(menu_item.item_id)
+            # Refresh cart display
+            self.load_cart_items()
