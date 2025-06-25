@@ -65,3 +65,8 @@ coverage.xml
 # database files
 *.sqlite3
 *.db
+
+# venv
+# Ignore virtual environment directories
+# This is a common name for virtual environments, but it can be customized.
+venv/
