@@ -11,7 +11,7 @@ from gui_Light import (
 )
 from utils.image_loader import load_image
 from utils.logger import log
-from orders.models import get_orders_by_user_id
+from orders.models import get_orders_by_user_id, create_order
 from cart.models import Cart
 from restaurants.models import Restaurant, MenuItem
 
@@ -423,10 +423,116 @@ class MainAppScreen(ctk.CTkFrame):
         self.restaurant_container.grid_remove()
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
-        
-        # Show cart
+          # Show cart
         self.cart_content_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         self.load_cart_items()
+
+    def load_order_history(self):
+        """Load and display order history in the orders content area (only one colored status label per order)"""
+        # Clear existing widgets
+        for widget in self.orders_scroll_frame.winfo_children():
+            widget.destroy()
+
+        # Get user orders
+        try:
+            orders = get_orders_by_user_id(self.user.user_id)
+        except Exception as e:
+            log(f"Error loading orders: {e}")
+            orders = []
+
+        if not orders:
+            # Modern empty state
+            empty_frame = ctk.CTkFrame(
+                self.orders_scroll_frame,
+                fg_color=FRAME_FG_COLOR,
+                corner_radius=16,
+                border_width=1,
+                border_color=FRAME_BORDER_COLOR
+            )
+            empty_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+            
+            empty_icon = ctk.CTkLabel(
+                empty_frame,
+                text="📋",
+                font=ctk.CTkFont(size=48),
+                text_color=GRAY_TEXT_COLOR
+            )
+            empty_icon.pack(pady=(30, 10))
+            
+            empty_label = ctk.CTkLabel(
+                empty_frame,
+                text="No orders yet!",
+                font=ctk.CTkFont(size=18, weight="bold"),
+                text_color=GRAY_TEXT_COLOR
+            )
+            empty_label.pack(pady=(0, 10))
+            
+            empty_desc = ctk.CTkLabel(
+                empty_frame,
+                text="Your order history will appear here",
+                font=ctk.CTkFont(size=14),
+                text_color=GRAY_TEXT_COLOR
+            )
+            empty_desc.pack(pady=(0, 30))
+            return
+
+        # Display orders
+        for i, order in enumerate(orders):
+            order_card = ctk.CTkFrame(
+                self.orders_scroll_frame,
+                fg_color=FRAME_FG_COLOR,
+                corner_radius=16,
+                border_width=1,
+                border_color=FRAME_BORDER_COLOR
+            )
+            order_card.grid(row=i, column=0, padx=20, pady=(0, 15), sticky="ew")
+            order_card.grid_columnconfigure(1, weight=1)
+
+            # Order status icon
+            status_icon = "✅" if order.status.lower() == "delivered" else "🕒"
+            status_label = ctk.CTkLabel(
+                order_card,
+                text=status_icon,
+                font=ctk.CTkFont(size=24),
+                text_color=SUCCESS_COLOR if order.status.lower() == "delivered" else PRIMARY_COLOR
+            )
+            status_label.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
+
+            # Order details
+            details_frame = ctk.CTkFrame(order_card, fg_color="transparent")
+            details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
+            details_frame.grid_columnconfigure(0, weight=1)
+
+            # Order ID and date
+            order_header = ctk.CTkLabel(
+                details_frame,
+                text=f"Order #{order.order_id} • {order.order_date.strftime('%B %d, %Y')}",
+                font=ctk.CTkFont(size=16, weight="bold"),
+                text_color=TEXT_COLOR,
+                anchor="w"
+            )
+            order_header.grid(row=0, column=0, sticky="ew", pady=(0, 5))
+
+            # Order total
+            total_label = ctk.CTkLabel(
+                details_frame,
+                text=f"Total: ₹{order.total_amount:.2f}",
+                font=ctk.CTkFont(size=18, weight="bold"),
+                text_color=PRIMARY_COLOR,
+                anchor="w"
+            )
+            total_label.grid(row=1, column=0, sticky="ew", pady=(0, 5))
+
+            # Only one status label, below the total, with correct color
+            status_color = self.get_status_color(order.status)
+            status_display = ctk.CTkLabel(
+                details_frame,
+                text=f"Status: {order.status.title()}",
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color=status_color,
+                anchor="w"
+            )
+            status_display.grid(row=2, column=0, sticky="ew", pady=(0, 5))
 
     def load_restaurants(self):
         log("MainAppScreen.load_restaurants called")        # Clear existing restaurant widgets
@@ -639,45 +745,38 @@ class MainAppScreen(ctk.CTkFrame):
         self.load_restaurants() # Reload restaurants, in case of user-specific content in future
 
     def show_profile_panel(self):
-        """Show the modern profile popup window"""
+        """Show the modern profile popup window with scrollable content"""
         log("show_profile_panel called - showing modern popup window")
-        
         # Destroy previous profile window if exists
         if hasattr(self, 'profile_window') and self.profile_window and self.profile_window.winfo_exists():
-            self.profile_window.destroy()        # Create new modern profile window with larger size to fit all content
+            self.profile_window.destroy()
         self.profile_window = ctk.CTkToplevel(self)
         self.profile_window.title("User Profile")
-        self.profile_window.geometry("950x750")
+        self.profile_window.geometry("950x900")  # Increased height for more content
         self.profile_window.resizable(False, False)
         set_swigato_icon(self.profile_window)
         self.profile_window.grab_set()  # Make it modal
-        
         # Center the window on screen
         self.profile_window.transient(self.app_ref)
-        
-        # Calculate center position
         window_width = 950
-        window_height = 750
+        window_height = 900
         screen_width = self.profile_window.winfo_screenwidth()
         screen_height = self.profile_window.winfo_screenheight()
         center_x = int(screen_width/2 - window_width/2)
         center_y = int(screen_height/2 - window_height/2)
-        
-        # Set the geometry to center the window
         self.profile_window.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
-        
-        # Configure window with light theme
-        self.profile_window.configure(fg_color="white")  # Light background
+        self.profile_window.configure(fg_color="white")
         self.profile_window.grid_columnconfigure(0, weight=1)
         self.profile_window.grid_rowconfigure(0, weight=1)
-        
-        # Main content frame with light theme styling
-        main_frame = ctk.CTkFrame(
-            self.profile_window, 
-            fg_color="white",  # Light background
+        # Use a scrollable frame for the main content
+        main_frame = ctk.CTkScrollableFrame(
+            self.profile_window,
+            fg_color="white",
             corner_radius=20,
             border_width=1,
-            border_color="#E5E7EB"  # Light border
+            border_color="#E5E7EB",
+            width=910,
+            height=860
         )
         main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         main_frame.grid_columnconfigure(0, weight=1)
@@ -702,13 +801,13 @@ class MainAppScreen(ctk.CTkFrame):
         user_info_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
         user_info_frame.grid(row=0, column=1, sticky="ew", padx=(0, 20), pady=20)
         
-        welcome_label = ctk.CTkLabel(
+        self.welcome_label = ctk.CTkLabel(
             user_info_frame,
             text=f"Welcome, {self.user.username}!",
             font=ctk.CTkFont(size=22, weight="bold"),
             text_color="white"
         )
-        welcome_label.pack(anchor="w")
+        self.welcome_label.pack(anchor="w")
         
         status_label = ctk.CTkLabel(
             user_info_frame,
@@ -730,18 +829,19 @@ class MainAppScreen(ctk.CTkFrame):
             font=ctk.CTkFont(size=16, weight="bold"),
             command=self.profile_window.destroy
         )
-        close_btn.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="ne")        # Modern TabView for profile sections with light theme - larger size for no scrolling
+        close_btn.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="ne")
+        # Modern TabView for profile sections with light theme - larger size for no scrolling
         self.profile_tabview = ctk.CTkTabview(
-            main_frame, 
-            width=890, 
-            height=580,
-            fg_color="white",  # Light background
-            segmented_button_fg_color="#F3F4F6",  # Light gray for tabs
-            segmented_button_selected_color=PRIMARY_COLOR,  # Orange for selected tab
+            main_frame,
+            width=890,
+            height=780,  # Increased height for more content
+            fg_color="white",
+            segmented_button_fg_color="#F3F4F6",
+            segmented_button_selected_color=PRIMARY_COLOR,
             segmented_button_selected_hover_color=BUTTON_HOVER_COLOR,
-            text_color="#374151",  # Dark text for better readability
-            segmented_button_unselected_color="#9CA3AF",  # Gray for unselected tabs
-            segmented_button_unselected_hover_color="#D1D5DB"  # Light gray hover
+            text_color="#374151",
+            segmented_button_unselected_color="#9CA3AF",
+            segmented_button_unselected_hover_color="#D1D5DB"
         )
         self.profile_tabview.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="nsew")
         
@@ -1206,6 +1306,58 @@ Developed with ❤️ using Python & CustomTkinter
         )
         info_display.pack(padx=20, pady=15)
 
+    def on_search_change(self, event=None):
+        """Handle search input changes with debouncing"""
+        # Debounce mechanism: wait for user to stop typing
+        if hasattr(self, 'search_job'):
+            self.after_cancel(self.search_job)
+        
+        self.search_job = self.after(500, self.perform_search)
+
+    def perform_search(self):
+        """Perform the actual search for restaurants and menu items"""
+        search_term = self.search_entry.get().strip().lower()
+        
+        # If search term is empty, load all restaurants
+        if not search_term:
+            self.load_restaurants()
+            return
+            
+        # Search both restaurant names and menu items
+        restaurants_by_name = Restaurant.search_by_name(search_term)
+        restaurants_with_items, menu_items = Restaurant.search_by_menu_item(search_term)
+        
+        # Combine results, avoiding duplicates
+        restaurant_ids = set(r.restaurant_id for r in restaurants_by_name)
+        combined_restaurants = list(restaurants_by_name)
+        
+        for r, items in restaurants_with_items:
+            if r.restaurant_id not in restaurant_ids:
+                restaurant_ids.add(r.restaurant_id)
+                combined_restaurants.append(r)
+                
+        # Sort combined results by name
+        combined_restaurants.sort(key=lambda r: r.name)
+        
+        # Display results with highlights for menu items
+        self.display_restaurants_with_highlights(combined_restaurants, restaurants_with_items, search_term)
+
+    def show_filter_options(self):
+        """Show filter options popup menu"""
+        # This is a placeholder for a more advanced filter menu
+        messagebox.showinfo("Filter", "Filter options are not yet implemented.")
+
+    def update_cart_count_in_nav(self):
+        """Update the cart count in the bottom navigation bar"""
+        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+            count = self.app_ref.cart.get_total_items()
+        else:
+            count = 0
+        
+        # Update the text of the cart button in the bottom navigation
+        if 'cart' in self.nav_buttons:
+            self.nav_buttons['cart'].configure(text=f"🛒 Cart ({count})")
+
     def update_profile_info(self):
         """Update user profile information"""
         try:
@@ -1399,6 +1551,17 @@ Developed with ❤️ using Python & CustomTkinter
                 
                 # Add cuisine type if available
                 if hasattr(rest, 'cuisine_type') and rest.cuisine_type:
+                    rest_label = ctk.CTkLabel(
+                        info_frame,
+                        text=f"🍽️ {rest.name}",
+                        font=ctk.CTkFont(size=16, weight="bold"),
+                        text_color=TEXT_COLOR,
+                        anchor="w"
+                    )
+                    rest_label.pack(anchor="w")
+                
+                # Add cuisine type if available
+                if hasattr(rest, 'cuisine_type') and rest.cuisine_type:
                     cuisine_label = ctk.CTkLabel(
                         info_frame,
                         text=f"🍴 {rest.cuisine_type}",
@@ -1586,6 +1749,7 @@ Developed with ❤️ using Python & CustomTkinter
                 half_star = restaurant.rating - full_stars >= 0.5
                 stars = "★" * full_stars + ("⭐" if half_star else "") + "☆" * (5 - full_stars - (1 if half_star else 0))
                 rating_text = f"{stars} {restaurant.rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
+               
                 rating_color = PRIMARY_COLOR
 
             rating_label = ctk.CTkLabel(
@@ -1613,207 +1777,6 @@ Developed with ❤️ using Python & CustomTkinter
                     anchor="w"
                 )
                 items_label.pack(padx=10, pady=6, fill="x")
-
-            # Action buttons section
-            action_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
-            action_frame.grid(row=0, column=2, padx=20, pady=20, sticky="ns")
-
-            # Heart/Favorite button with improved feedback
-            is_fav = self.user.is_favorite_restaurant(restaurant.restaurant_id)
-            heart_button = ctk.CTkButton(
-                action_frame,
-                text="♥" if is_fav else "♡",
-                width=50,
-                height=50,
-                fg_color=ERROR_COLOR if is_fav else FRAME_FG_COLOR,
-                text_color="white" if is_fav else ERROR_COLOR,
-                font=ctk.CTkFont(size=24),
-                hover_color=BUTTON_HOVER_COLOR,
-                corner_radius=25,
-                border_width=2 if not is_fav else 0,
-                border_color=ERROR_COLOR if not is_fav else ERROR_COLOR,
-                command=lambda r=restaurant: self._toggle_favorite_restaurant(r)
-            )
-            heart_button.grid(row=0, column=0, pady=(0, 12))
-
-            # View Menu button with modern design
-            view_menu_button = ctk.CTkButton(
-                action_frame,
-                text="View Menu →",
-                width=120,
-                height=45,
-                fg_color=PRIMARY_COLOR,
-                hover_color=BUTTON_HOVER_COLOR,
-                text_color=TEXT_COLOR,
-                font=ctk.CTkFont(size=14, weight="bold"),
-                corner_radius=12,
-                command=lambda r=restaurant: self.show_menu_callback(r)
-            )
-            view_menu_button.grid(row=1, column=0)
-
-    def on_search_change(self, event=None):
-        """Handle search text changes for real-time filtering"""
-        search_term = self.search_entry.get().lower().strip()
-        self.filter_restaurants(search_term)
-    
-    def filter_restaurants(self, search_term=""):
-        """Filter restaurants based on search term - includes restaurant names, cuisine types, and menu items"""
-        # Clear existing restaurant widgets
-        for widget in self.restaurant_scroll_frame.winfo_children():            widget.destroy()
-
-        all_restaurants = Restaurant.get_all()
-        
-        # Filter restaurants based on search term
-        if search_term:
-            filtered_restaurants = []
-            restaurants_with_matching_items = []
-            
-            for restaurant in all_restaurants:                # Check if restaurant name or cuisine matches
-                if (search_term in restaurant.name.lower() or 
-                    search_term in restaurant.cuisine_type.lower()):
-                    filtered_restaurants.append(restaurant)
-                else:
-                    # Check if any menu items match the search term
-                    menu_items = restaurant.menu  # Use the menu property instead of get_menu_items()
-                    matching_items = [
-                        item for item in menu_items 
-                        if (search_term in item.name.lower() or 
-                            search_term in item.description.lower())
-                    ]
-                    
-                    if matching_items:
-                        restaurants_with_matching_items.append((restaurant, matching_items))
-            
-            # Combine results: exact restaurant matches first, then restaurants with matching menu items
-            all_filtered_restaurants = filtered_restaurants + [r[0] for r in restaurants_with_matching_items]
-            
-            if not all_filtered_restaurants:
-                no_results_label = ctk.CTkLabel(
-                    self.restaurant_scroll_frame,
-                    text=f"No restaurants or menu items found for '{search_term}'",
-                    text_color=GRAY_TEXT_COLOR,
-                    font=ctk.CTkFont(size=16)
-                )
-                no_results_label.grid(row=0, column=0, pady=50)
-                return
-              # Display filtered restaurants with highlighting for menu item matches
-            self.display_restaurants_with_highlights(all_filtered_restaurants, restaurants_with_matching_items, search_term)
-        else:
-            # No search term - show all restaurants
-            all_restaurants = Restaurant.get_all()
-            self.display_restaurants(all_restaurants)
-
-    def show_filter_options(self):
-        """Show filter options dialog"""
-        messagebox.showinfo("Filter Options", "Advanced filtering coming soon!\n\nUse the search bar to find restaurants by name, cuisine type, or specific food items!")
-    
-    def display_restaurants(self, restaurants):
-        """Display a list of restaurants"""
-        # Clear existing restaurant widgets
-        for widget in self.restaurant_scroll_frame.winfo_children():
-            widget.destroy()
-            
-        if not restaurants:
-            no_restaurants_label = ctk.CTkLabel(self.restaurant_scroll_frame,
-                                                text="No restaurants available at the moment.",
-                                                text_color=TEXT_COLOR,
-                                                font=ctk.CTkFont(size=16))
-            no_restaurants_label.grid(row=0, column=0, pady=20)
-            return
-
-        for i, restaurant in enumerate(restaurants):
-            # Create modern restaurant card with enhanced visual design
-            restaurant_card = ctk.CTkFrame(
-                self.restaurant_scroll_frame,
-                fg_color=FRAME_FG_COLOR,
-                border_color=FRAME_BORDER_COLOR,
-                border_width=1,
-                corner_radius=16,
-                height=200
-            )
-            restaurant_card.grid(row=i, column=0, padx=10, pady=(0, 15), sticky="ew")
-            restaurant_card.grid_columnconfigure(0, weight=0)  # Image
-            restaurant_card.grid_columnconfigure(1, weight=1)  # Content
-            restaurant_card.grid_columnconfigure(2, weight=0)  # Actions
-            restaurant_card.grid_propagate(False)
-
-            # Restaurant Image section
-            image_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
-            image_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
-
-            # Load and display restaurant image
-            if restaurant.image_filename:
-                project_root = self.app_ref.project_root
-                image_path = os.path.join(project_root, "assets", "restaurants", restaurant.image_filename)
-                ctk_image = load_image(image_path, size=(140, 140))
-                if ctk_image:
-                    image_label = ctk.CTkLabel(image_frame, image=ctk_image, text="", corner_radius=12)
-                    image_label.pack()
-                else:
-                    # Fallback placeholder
-                    image_label = ctk.CTkLabel(image_frame, text="🍽️", font=ctk.CTkFont(size=48), 
-                                             width=140, height=140, fg_color=GRAY_TEXT_COLOR, 
-                                             text_color=BUTTON_TEXT_COLOR, corner_radius=12)
-                    image_label.pack()
-            else:
-                # Default placeholder
-                image_label = ctk.CTkLabel(image_frame, text="🍽️", font=ctk.CTkFont(size=48), 
-                                         width=140, height=140, fg_color=GRAY_TEXT_COLOR, 
-                                         text_color=BUTTON_TEXT_COLOR, corner_radius=12)
-                image_label.pack()
-
-            # Restaurant Details section
-            details_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
-            details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
-            details_frame.grid_columnconfigure(0, weight=1)
-
-            # Restaurant name with enhanced typography
-            name_label = ctk.CTkLabel(
-                details_frame, 
-                text=restaurant.name,
-                font=ctk.CTkFont(size=24, weight="bold"),
-                text_color=TEXT_COLOR,
-                anchor="w"
-            )
-            name_label.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-
-            # Cuisine type with modern badge design
-            cuisine_frame = ctk.CTkFrame(details_frame, fg_color=PRIMARY_COLOR, corner_radius=8, height=28)
-            cuisine_frame.grid(row=1, column=0, sticky="w", pady=(0, 12))
-            cuisine_frame.grid_propagate(False)
-            
-            cuisine_label = ctk.CTkLabel(
-                cuisine_frame, 
-                text=restaurant.cuisine_type,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color="white"
-            )
-            cuisine_label.pack(padx=12, pady=6)
-
-            # Restaurant rating with star display
-            rating_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
-            rating_frame.grid(row=2, column=0, sticky="ew", pady=(0, 12))
-
-            review_count = restaurant.get_review_count()
-            if review_count == 0:
-                rating_text = "No reviews yet"
-                rating_color = GRAY_TEXT_COLOR
-            else:
-                # Create star display
-                full_stars = int(restaurant.rating)
-                half_star = restaurant.rating - full_stars >= 0.5
-                stars = "★" * full_stars + ("⭐" if half_star else "") + "☆" * (5 - full_stars - (1 if half_star else 0))
-                rating_text = f"{stars} {restaurant.rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
-                rating_color = PRIMARY_COLOR
-
-            rating_label = ctk.CTkLabel(
-                rating_frame, 
-                text=rating_text,
-                font=ctk.CTkFont(size=14, weight="bold"),
-                text_color=rating_color,
-                anchor="w"
-            )
-            rating_label.pack(side="left")
 
             # Action buttons section
             action_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
@@ -1898,41 +1861,37 @@ Developed with ❤️ using Python & CustomTkinter
         header_label.grid(row=0, column=0, pady=(0, 20))
         
         # Order summary
-        cart_items = self.app_ref.cart.items
-        total_amount = sum(item.menu_item.price * item.quantity for item in cart_items.values())
-        
-        summary_frame = ctk.CTkFrame(main_frame, fg_color="#F9FAFB", corner_radius=10, border_width=1, border_color="#E5E7EB")
+        summary_frame = ctk.CTkFrame(main_frame, fg_color="#F9FAFB", corner_radius=10)
         summary_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
         summary_frame.grid_columnconfigure(0, weight=1)
         
         summary_label = ctk.CTkLabel(
             summary_frame,
             text="📋 Order Summary",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=ctk.CTkFont(size=18, weight="bold"),
             text_color=TEXT_COLOR
         )
         summary_label.grid(row=0, column=0, pady=(15, 10))
         
-        # List items
-        for i, cart_item in enumerate(cart_items.values()):
-            item_text = f"• {cart_item.menu_item.name} x{cart_item.quantity} = ₹{cart_item.menu_item.price * cart_item.quantity}"
+        # Display cart items
+        for i, (item_id, cart_item) in enumerate(self.app_ref.cart.items.items()):
             item_label = ctk.CTkLabel(
                 summary_frame,
-                text=item_text,
+                text=f"• {cart_item.menu_item.name} x{cart_item.quantity} = ₹{cart_item.item_total:.2f}",
                 font=ctk.CTkFont(size=12),
-                text_color=GRAY_TEXT_COLOR,
-                anchor="w"
+                text_color=TEXT_COLOR
             )
             item_label.grid(row=i+1, column=0, sticky="w", padx=20, pady=2)
         
-        # Total
+        # Total amount
+        total_amount = self.app_ref.cart.get_total_price()
         total_label = ctk.CTkLabel(
             summary_frame,
-            text=f"💰 Total Amount: ₹{total_amount}",
+            text=f"💰 Total Amount: ₹{total_amount:.2f}",
             font=ctk.CTkFont(size=16, weight="bold"),
             text_color=PRIMARY_COLOR
         )
-        total_label.grid(row=len(cart_items)+1, column=0, pady=(10, 15))
+        total_label.grid(row=len(self.app_ref.cart.items)+1, column=0, pady=15)
         
         # Delivery address section
         address_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
@@ -1947,24 +1906,16 @@ Developed with ❤️ using Python & CustomTkinter
         )
         address_label.grid(row=0, column=0, sticky="w", pady=(0, 10))
         
-        self.address_entry = ctk.CTkEntry(
+        self.checkout_address_entry = ctk.CTkEntry(
             address_frame,
-            placeholder_text="Enter your delivery address...",
+            placeholder_text="Enter your delivery address",
             font=ctk.CTkFont(size=14),
             height=40,
-            fg_color="white",
-            text_color="#1F2937",
-            placeholder_text_color="#9CA3AF",
-            border_color="#D1D5DB",
-            border_width=1
+            width=400
         )
-        self.address_entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 20))
+        self.checkout_address_entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 20))
         
-        # Pre-fill with user's address if available
-        if hasattr(self.user, 'address') and self.user.address:
-            self.address_entry.insert(0, self.user.address)
-        
-        # Buttons frame
+        # Buttons
         buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         buttons_frame.grid(row=3, column=0, sticky="ew")
         buttons_frame.grid_columnconfigure((0, 1), weight=1)
@@ -2001,156 +1952,82 @@ Developed with ❤️ using Python & CustomTkinter
 
     def place_order(self, checkout_window):
         """Place the order"""
-        delivery_address = self.address_entry.get().strip()
+        # Prevent multiple order placements by disabling the window
+        if not checkout_window.winfo_exists():
+            return
+            
+        delivery_address = self.checkout_address_entry.get().strip()
         
         if not delivery_address:
             messagebox.showerror("Missing Address", "Please enter a delivery address!")
             return
         
         try:
-            # Here you would integrate with your order placement logic
-            # For now, just show a success message
-            messagebox.showinfo("Order Placed!", f"Your order has been placed successfully!\n\nDelivery Address: {delivery_address}\n\nThank you for using Swigato!")
+            # Disable window interaction during order placement
+            checkout_window.grab_release()
+            checkout_window.withdraw()  # Hide the window immediately
             
-            # Clear the cart after successful order
-            if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
-                self.app_ref.cart.clear_cart()
+            cart = self.app_ref.cart
+            if not cart or not cart.items:
+                messagebox.showerror("Empty Cart", "Cannot place an order with an empty cart.")
+                checkout_window.destroy()
+                return
+
+            # Assuming all items in the cart are from the same restaurant
+            first_item = next(iter(cart.items.values()))
+            restaurant_id = first_item.menu_item.restaurant_id
+            restaurant = Restaurant.get_by_id(restaurant_id)
+            restaurant_name = restaurant.name if restaurant else "Unknown Restaurant"
+
+            # Create the order
+            order = create_order(
+                user_id=self.user.user_id,
+                restaurant_id=restaurant_id,
+                restaurant_name=restaurant_name,
+                cart_items=cart.get_items_for_order(),
+                total_amount=cart.get_total_price(),
+                user_address=delivery_address
+            )
+
+            if order:
+                messagebox.showinfo("Order Placed!", f"Your order #{order.order_id} has been placed successfully!\n\nDelivery Address: {delivery_address}\n\nThank you for using Swigato!")
+                
+                # Clear the cart after successful order
+                cart.clear_cart()
                 self.load_cart_items()  # Refresh cart display
-            
-            # Close checkout window            checkout_window.destroy()
+                self.load_order_history() # Refresh order history
+                self.update_profile_stats() # Refresh profile stats
+            else:
+                messagebox.showerror("Order Failed", "There was an issue placing your order. Please try again.")
+
+            # Close checkout window safely
+            if checkout_window.winfo_exists():
+                checkout_window.destroy()
             
         except Exception as e:
+            log(f"Error placing order: {e}")
+            # Restore window if there's an error
+            if checkout_window.winfo_exists():
+                checkout_window.deiconify()
+                checkout_window.grab_set()
             messagebox.showerror("Order Failed", f"Failed to place order: {str(e)}")
 
-    def load_order_history(self):
-        """Load and display order history in the orders content area"""
-        # Clear existing widgets
-        for widget in self.orders_scroll_frame.winfo_children():
-            widget.destroy()
-
-        # Get user orders
-        try:
-            orders = get_orders_by_user_id(self.user.user_id)
-        except Exception as e:
-            log(f"Error loading orders: {e}")
-            orders = []
-
-        if not orders:
-            # Modern empty state
-            empty_frame = ctk.CTkFrame(
-                self.orders_scroll_frame,
-                fg_color=FRAME_FG_COLOR,
-                corner_radius=16,
-                border_width=1,
-                border_color=FRAME_BORDER_COLOR
-            )
-            empty_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
-            
-            empty_icon = ctk.CTkLabel(
-                empty_frame,
-                text="📋",
-                font=ctk.CTkFont(size=48),
-                text_color=GRAY_TEXT_COLOR
-            )
-            empty_icon.pack(pady=(30, 10))
-            
-            empty_label = ctk.CTkLabel(
-                empty_frame,
-                text="No orders yet!",
-                font=ctk.CTkFont(size=20, weight="bold"),
-                text_color=TEXT_COLOR
-            )
-            empty_label.pack(pady=(0, 5))
-            
-            empty_desc = ctk.CTkLabel(
-                empty_frame,
-                text="Browse restaurants and place your first order\nto see your order history here.",
-                font=ctk.CTkFont(size=14),
-                text_color=GRAY_TEXT_COLOR,
-                justify="center"
-            )
-            empty_desc.pack(pady=(0, 30))
-            return
-
-        # Display orders
-        for i, order in enumerate(orders):
-            order_card = ctk.CTkFrame(
-                self.orders_scroll_frame,
-                fg_color=FRAME_FG_COLOR,
-                corner_radius=12,
-                border_width=1,
-                border_color=FRAME_BORDER_COLOR
-            )
-            order_card.grid(row=i, column=0, pady=(0, 10), padx=20, sticky="ew")
-            order_card.grid_columnconfigure(0, weight=1)
-            order_card.grid_columnconfigure(1, weight=0)
-
-            # Order details frame
-            details_frame = ctk.CTkFrame(order_card, fg_color="transparent")
-            details_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=15)
-            
-            # Order header
-            header_text = f"Order #{order.order_id}"
-            header_label = ctk.CTkLabel(
-                details_frame,
-                text=header_text,
-                font=ctk.CTkFont(size=16, weight="bold"),
-                text_color=TEXT_COLOR,
-                anchor="w"
-            )
-            header_label.pack(anchor="w")
-            
-            # Restaurant name
-            if hasattr(order, 'restaurant_name') and order.restaurant_name:
-                restaurant_label = ctk.CTkLabel(
-                    details_frame,
-                    text=f"🍽️ {order.restaurant_name}",
-                    font=ctk.CTkFont(size=14),
-                    text_color=TEXT_COLOR,
-                    anchor="w"
-                )
-                restaurant_label.pack(anchor="w", pady=(2, 0))
-            
-            # Total amount
-            total_label = ctk.CTkLabel(
-                details_frame,
-                text=f"💰 Total: ₹{order.total_amount}",
-                font=ctk.CTkFont(size=14),
-                text_color=TEXT_COLOR,
-                anchor="w"
-            )
-            total_label.pack(anchor="w", pady=(2, 0))
-            
-            # Order date if available
-            if hasattr(order, 'created_at') and order.created_at:
-                date_label = ctk.CTkLabel(
-                    details_frame,
-                    text=f"📅 {order.created_at}",
-                    font=ctk.CTkFont(size=12),
-                    text_color=GRAY_TEXT_COLOR,
-                    anchor="w"
-                )
-                date_label.pack(anchor="w", pady=(2, 0))
-
-            # Status badge
-            status_color = self.get_status_color(order.status)
-            status_frame = ctk.CTkFrame(order_card, fg_color=status_color, corner_radius=8, height=30)
-            status_frame.grid(row=0, column=1, padx=(0, 20), pady=15, sticky="e")
-            status_frame.grid_propagate(False)
-            
-            status_label = ctk.CTkLabel(
-                status_frame,
-                text=order.status,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color="white"
-            )
-            status_label.pack(padx=12, pady=6)
+    def update_profile_stats(self):
+        """Update the statistics on the profile page after an order."""
+        # This is a simplified way to trigger an update.
+        # A more robust solution might involve a direct update of the labels.
+        if hasattr(self, 'profile_window') and self.profile_window.winfo_exists():
+            # If profile window is open, refresh its contents
+            self.setup_profile_tab()
 
     def load_cart_items(self):
         """Load and display cart items in the cart content area"""
         # Clear existing widgets
         for widget in self.cart_scroll_frame.winfo_children():
             widget.destroy()
+
+        # Update navigation cart count
+        self.update_cart_count_in_nav()
 
         # Check if cart exists and has items
         if not hasattr(self.app_ref, 'cart') or not self.app_ref.cart or not self.app_ref.cart.items:
@@ -2291,15 +2168,15 @@ Developed with ❤️ using Python & CustomTkinter
         checkout_btn.grid(row=len(cart_items) + 1, column=0, pady=(10, 20))
 
     def get_status_color(self, status):
-        """Get color for order status"""
+        """Get color for order status (Bootstrap-inspired palette)"""
         status_colors = {
-            'pending': '#FFA500',      # Orange
-            'confirmed': '#4CAF50',    # Green  
-            'preparing': '#2196F3',    # Blue
-            'out_for_delivery': '#FF9800',  # Amber
-            'delivered': '#8BC34A',    # Light Green
-            'cancelled': '#F44336',    # Red
-            'completed': '#4CAF50'     # Green
+            'pending confirmation': '#DC3545',   # Red
+            'preparing': '#FFC107',             # Orange
+            'confirmed': '#17A2B8',             # Teal/Light Blue
+            'out for delivery': '#2ECC71',      # Bright Green
+            'delivered': '#008000',             # Darker Green
+            'cancelled': '#6C757D',             # Muted Grey
+            'failed': '#A50000'                 # Dark Red
         }
         return status_colors.get(status.lower(), '#757575')  # Default gray
 

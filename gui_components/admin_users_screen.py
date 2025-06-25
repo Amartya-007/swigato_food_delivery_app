@@ -524,9 +524,18 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
                 logger.error(f"Failed to update password for user {user_to_update_obj.username}")
 
         if user_to_update_obj.address != new_address:
-            if not user_to_update_obj.update_address(new_address):
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute("UPDATE users SET address = ? WHERE user_id = ?", (new_address, user_to_update_obj.user_id))
+                conn.commit()
+                user_to_update_obj.address = new_address  # Update object in memory
+                logger.info(f"Address for user ID {user_to_update_obj.user_id} updated to '{new_address}'.")
+            except Exception as e:
+                logger.error(f"Error updating address for user ID {user_to_update_obj.user_id}: {e}")
                 update_success = False
-                logger.error(f"Failed to update address for user {user_to_update_obj.username}")
+            finally:
+                conn.close()
         
         if user_to_update_obj.is_admin != new_is_admin:
             if not user_to_update_obj.update_admin_status(new_is_admin):

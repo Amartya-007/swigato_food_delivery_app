@@ -99,15 +99,14 @@ class App(ctk.CTk):
         return SignupScreen(self, self.show_login_screen)
 
     def _create_main_app_screen(self):
-        return MainAppScreen(self, self.current_user, self.show_menu_screen, self.show_cart_screen, self.logout)
+        return MainAppScreen(self, self.current_user, self.show_menu_screen, self.logout)
 
     def _create_menu_screen(self, restaurant):
         # Ensure self.menu_screen_instance is created and stored
         self.menu_screen_instance = MenuScreen(
             app_ref=self,  # Pass self (the App instance) as app_ref
             user=self.current_user,
-            restaurant=restaurant,
-            show_cart_callback=self.show_main_app_cart
+            restaurant=restaurant
         )
         return self.menu_screen_instance
 
@@ -221,6 +220,7 @@ class App(ctk.CTk):
         self.show_menu_screen(restaurant)
 
     def show_cart_screen(self):
+        """Navigate to main app and show cart content (modernized cart experience)"""
         if not self.current_user:
             print("Error: User not logged in. Cannot show cart.")
             self.show_login_screen()
@@ -229,10 +229,18 @@ class App(ctk.CTk):
             print("Error: Cart not initialized. Cannot show cart.")
             self.show_main_app_screen(self.current_user)
             return
-
-        self._switch_screen(self._create_cart_screen, title=f"Swigato - {self.current_user.username}'s Cart", width=900, height=700)
-        if self.current_screen_frame and hasattr(self.current_screen_frame, 'load_cart_items'):
-            self.current_screen_frame.load_cart_items()
+        
+        # Show main app screen and navigate to cart content
+        self.show_main_app_screen(self.current_user)
+        
+        # If main app screen exists, switch to cart content
+        if hasattr(self, 'current_screen_frame') and self.current_screen_frame:
+            main_screen = self.current_screen_frame
+            if hasattr(main_screen, 'show_cart_content'):
+                main_screen.show_cart_content()
+                # Also update the navigation tab to cart
+                if hasattr(main_screen, 'set_active_nav_tab'):
+                    main_screen.set_active_nav_tab("cart")
 
     def show_admin_screen(self, user):
         if not user or not user.is_admin:

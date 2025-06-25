@@ -20,7 +20,9 @@ class MenuScreen(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=0)  # Modern Header Frame
         self.grid_rowconfigure(1, weight=1)  # Main Scrollable Frame
         self.grid_rowconfigure(2, weight=0)  # Status Label
-        self.grid_rowconfigure(3, weight=0)  # Bottom Navigation# Attributes for inline review form
+        self.grid_rowconfigure(3, weight=0)  # Bottom Navigation
+
+        # Attributes for inline review form
         self.is_review_form_visible = False
         self.rating_var = ctk.IntVar(value=0)
         self.star_button_widgets = []
@@ -28,9 +30,7 @@ class MenuScreen(ctk.CTkFrame):
         self.placeholder_text = "Share your thoughts..."
         self.is_placeholder_active = True
         self.write_review_button_widget = None
-        self.inline_review_form_actual_frame = None
-
-        # --- Modern Header Frame with Enhanced Styling ---
+        self.inline_review_form_actual_frame = None        # --- Modern Header Frame with Enhanced Styling ---
         self._create_modern_header()
         
         # --- Main Scrollable Frame ---
@@ -674,6 +674,8 @@ class MenuScreen(ctk.CTkFrame):
                     text=f"✅ '{menu_item.name}' added to cart!",
                     text_color=SUCCESS_COLOR
                 )
+                # Update cart count in navigation
+                self.update_cart_count_in_nav()
             else:
                 self.status_label.configure(
                     text=f"❌ Failed to add '{menu_item.name}'",
@@ -685,6 +687,23 @@ class MenuScreen(ctk.CTkFrame):
                 text_color=ERROR_COLOR
             )
         self.after(3000, lambda: self.status_label.configure(text=""))
+
+    def update_cart_count_in_nav(self):
+        """Update the cart count display in navigation buttons"""
+        if not hasattr(self, 'nav_buttons') or 'cart' not in self.nav_buttons:
+            return
+            
+        # Calculate current cart count
+        cart_count = 0
+        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+            cart_count = len(self.app_ref.cart.items)
+        
+        # Update cart button text
+        cart_text = f"🛒({cart_count})" if cart_count > 0 else "🛒"
+        
+        # Update the cart button
+        if self.nav_buttons['cart']:
+            self.nav_buttons['cart'].configure(text=cart_text)
 
     def create_bottom_nav_bar(self):
         """Create the bottom navigation bar with modern glassmorphism effects - matching main window"""        # Create a modern glassmorphism-style navigation bar
@@ -868,16 +887,31 @@ class MenuScreen(ctk.CTkFrame):
         """Navigate back to main app and show cart content"""
         try:
             # Go back to main app screen and switch to cart tab
-            self.app_ref.show_main_app_screen()
-            # If the main app screen has a method to show cart content, call it
-            if hasattr(self.app_ref, 'main_app_screen_instance') and self.app_ref.main_app_screen_instance:
-                main_screen = self.app_ref.main_app_screen_instance
+            self.app_ref.show_main_app_screen(self.user)
+            
+            # Wait a brief moment for the screen to be created, then switch to cart
+            self.after(100, self._switch_to_cart_after_navigation)
+            
+        except Exception as e:
+            log(f"Error navigating to cart: {e}")
+            # Fallback: just show main app screen
+            self.app_ref.show_main_app_screen(self.user)
+
+    def _switch_to_cart_after_navigation(self):
+        """Helper method to switch to cart tab after navigation"""
+        try:
+            # Use current_screen_frame instead of main_app_screen_instance
+            if hasattr(self.app_ref, 'current_screen_frame') and self.app_ref.current_screen_frame:
+                main_screen = self.app_ref.current_screen_frame
                 if hasattr(main_screen, 'show_cart_content'):
                     main_screen.show_cart_content()
                     # Also update the navigation tab to cart
                     if hasattr(main_screen, 'set_active_nav_tab'):
                         main_screen.set_active_nav_tab("cart")
+                    log("Successfully switched to cart content")
+                else:
+                    log("Main screen doesn't have show_cart_content method")
+            else:
+                log("No current_screen_frame found")
         except Exception as e:
-            log(f"Error navigating to cart: {e}")
-            # Fallback: just show main app screen
-            self.app_ref.show_main_app_screen()
+            log(f"Error switching to cart after navigation: {e}")

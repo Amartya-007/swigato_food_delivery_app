@@ -129,13 +129,16 @@ class FavoriteMenuItemCard(ctk.CTkFrame):
         add_to_cart_btn.grid(row=0, column=1, padx=(0, 20), pady=15, sticky="e")
     
     def add_to_cart(self):
-        """Add item to cart using cart utilities"""
-        CartUtilities.add_to_cart_from_favorites(
-            self.app_ref, 
-            self.user, 
-            self.menu_item, 
-            self.parent_widget
-        )
+        """Add item to cart using cart utilities, with error handling"""
+        try:
+            CartUtilities.add_to_cart_from_favorites(
+                self.app_ref, 
+                self.user, 
+                self.menu_item, 
+                self.parent_widget
+            )
+        except Exception as e:
+            log(f"Error adding to cart from favorites: {e}")
 
 
 class FavoritesListComponent(ctk.CTkScrollableFrame):
@@ -300,14 +303,5 @@ class FavoritesWindow:
             corner_radius=0,
             border_width=0
         )
-        favorites_list.pack(fill="both", expand=True)
+        favorites_list.grid(row=0, column=0, sticky="nsew")  # Use grid instead of pack
         favorites_list.load_favorites()
-
-    def _quick_order_from_favorites(self, menu_item):
-        """Legacy method for compatibility - uses CartUtilities now"""
-        return CartUtilities.add_to_cart_from_favorites(
-            self.app_ref, 
-            self.user, 
-            menu_item, 
-            self.favorites_window
-        )

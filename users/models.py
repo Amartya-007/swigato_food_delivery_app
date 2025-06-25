@@ -284,7 +284,7 @@ class User:
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT restaurant_id FROM user_favorites WHERE user_id = ? AND restaurant_id IS NOT NULL", (self.user_id,))
+            cursor.execute("SELECT DISTINCT restaurant_id FROM user_favorites WHERE user_id = ? AND restaurant_id IS NOT NULL", (self.user_id,))
             rows = cursor.fetchall()
             return [Restaurant.get_by_id(row[0]) for row in rows if row[0] is not None]
         except Exception as e:
@@ -336,7 +336,7 @@ class User:
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT item_id FROM user_favorites WHERE user_id = ? AND item_id IS NOT NULL", (self.user_id,))
+            cursor.execute("SELECT DISTINCT item_id FROM user_favorites WHERE user_id = ? AND item_id IS NOT NULL", (self.user_id,))
             rows = cursor.fetchall()
             return [MenuItem.get_by_id(row[0]) for row in rows if row[0] is not None]
         except Exception as e:

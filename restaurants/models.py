@@ -409,6 +409,113 @@ class Restaurant:
         finally:
             conn.close()
 
+    @staticmethod
+    def search_by_name(search_term):
+        """Search for restaurants by name (case-insensitive)."""
+        log(f"Searching for restaurants with name like: {search_term}")
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        restaurants = []
+        try:
+            # Use a JOIN to get the average rating for each restaurant
+            cursor.execute("""
+                SELECT 
+                    r.restaurant_id, r.name, r.address, r.cuisine_type, r.image_filename, r.created_at,
+                    COALESCE(AVG(rev.rating), 0) as average_rating,
+                    COUNT(rev.review_id) as review_count
+                FROM restaurants r
+                LEFT JOIN reviews rev ON r.restaurant_id = rev.restaurant_id
+                WHERE lower(r.name) LIKE ?
+                GROUP BY r.restaurant_id
+                ORDER BY r.name
+            """, ('%' + search_term.lower() + '%',))
+            rows = cursor.fetchall()
+            for row in rows:
+                restaurants.append(Restaurant(**dict(row)))
+            log(f"Found {len(restaurants)} restaurants matching '{search_term}'.")
+            return restaurants
+        except sqlite3.Error as e:
+            log(f"SQLite error searching for restaurants by name '{search_term}': {e}")
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
+    def search_by_menu_item(search_term):
+        """Search for restaurants based on menu item names (case-insensitive)."""
+        log(f"Searching for restaurants with menu items like: {search_term}")
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # This will hold tuples of (Restaurant, list_of_matching_menu_items)
+        restaurants_with_items = []
+        
+        # This will hold all unique matching menu items found
+        all_matching_items = []
+
+        try:
+            # Find all menu items that match the search term
+            cursor.execute("""
+                SELECT * FROM menu_items 
+                WHERE lower(name) LIKE ?
+            """, ('%' + search_term.lower() + '%',))
+            
+            matching_items = [MenuItem(**dict(row)) for row in cursor.fetchall()]
+            all_matching_items.extend(matching_items)
+
+            # Get the unique restaurant IDs from the found menu items
+            restaurant_ids = {item.restaurant_id for item in matching_items}
+
+            if not restaurant_ids:
+                log("No menu items found, so no restaurants to return.")
+                return [], []
+
+            # Now, fetch the restaurant details for these IDs
+            # We use a placeholder string for the IN clause
+            placeholders = ','.join('?' for _ in restaurant_ids)
+            
+            # Also get the average rating for each restaurant
+            cursor.execute(f"""
+                SELECT 
+                    r.restaurant_id, r.name, r.address, r.cuisine_type, r.image_filename, r.created_at,
+                    COALESCE(AVG(rev.rating), 0) as average_rating,
+                    COUNT(rev.review_id) as review_count
+                FROM restaurants r
+                LEFT JOIN reviews rev ON r.restaurant_id = rev.restaurant_id
+                WHERE r.restaurant_id IN ({placeholders})
+                GROUP BY r.restaurant_id
+            """, list(restaurant_ids))
+            
+            restaurant_rows = cursor.fetchall()
+            
+            # Create a dictionary for easy lookup: {restaurant_id: Restaurant_object}
+            restaurants_dict = {row['restaurant_id']: Restaurant(**dict(row)) for row in restaurant_rows}
+
+            # Create a dictionary to group matching items by restaurant: {restaurant_id: [item1, item2]}
+            items_by_restaurant = {}
+            for item in matching_items:
+                if item.restaurant_id not in items_by_restaurant:
+                    items_by_restaurant[item.restaurant_id] = []
+                items_by_restaurant[item.restaurant_id].append(item)
+
+            # Build the final list of (Restaurant, list_of_items)
+            for res_id, restaurant in restaurants_dict.items():
+                if res_id in items_by_restaurant:
+                    restaurants_with_items.append((restaurant, items_by_restaurant[res_id]))
+
+            log(f"Found {len(restaurants_with_items)} restaurants with menu items matching '{search_term}'.")
+            return restaurants_with_items, all_matching_items
+
+        except sqlite3.Error as e:
+            log(f"SQLite error searching for restaurants by menu item '{search_term}': {e}")
+            return [], []
+        finally:
+            conn.close()
+            
+# ... existing code ...
+
 def populate_sample_restaurant_data():
     log("Attempting to populate sample restaurant data...")
     
