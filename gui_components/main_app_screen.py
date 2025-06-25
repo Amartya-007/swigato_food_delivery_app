@@ -664,7 +664,8 @@ class MainAppScreen(ctk.CTkFrame):
             details_frame.grid(row=0, column=1, rowspan=3, padx=(0, 20), pady=20, sticky="nsew")
             details_frame.grid_rowconfigure(0, weight=0)
             details_frame.grid_rowconfigure(1, weight=0)
-            details_frame.grid_rowconfigure(2, weight=1) # Spacer
+            details_frame.grid_rowconfigure(2, weight=0)
+            details_frame.grid_rowconfigure(3, weight=1) # Spacer
 
             # Restaurant name
             name_label = ctk.CTkLabel(
@@ -686,6 +687,59 @@ class MainAppScreen(ctk.CTkFrame):
                 anchor="w"
             )
             cuisine_label.grid(row=1, column=0, sticky="ew", pady=(5, 0))
+
+            # Rating and reviews section
+            try:
+                avg_rating = restaurant.rating
+                review_count = restaurant.get_review_count()
+                
+                if review_count > 0:
+                    # Generate star display with visual stars
+                    filled_stars = int(avg_rating)
+                    half_star = 1 if (avg_rating - filled_stars) >= 0.5 else 0
+                    empty_stars = 5 - filled_stars - half_star
+                    
+                    stars = "⭐" * filled_stars
+                    if half_star:
+                        stars += "⭐"  # You could use a half-star unicode if available
+                    stars += "☆" * empty_stars
+                    
+                    rating_text = f"{stars} {avg_rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
+                    
+                    # Color based on rating quality
+                    if avg_rating >= 4.5:
+                        rating_color = "#059669"  # Excellent (dark green)
+                    elif avg_rating >= 4.0:
+                        rating_color = SUCCESS_COLOR  # Very good (green)
+                    elif avg_rating >= 3.5:
+                        rating_color = "#F59E0B"  # Good (amber)
+                    elif avg_rating >= 3.0:
+                        rating_color = "#EF4444"  # Average (orange-red)
+                    else:
+                        rating_color = "#DC2626"  # Poor (red)
+                else:
+                    rating_text = "⭐ No reviews yet - Be the first to review!"
+                    rating_color = GRAY_TEXT_COLOR
+                
+                rating_label = ctk.CTkLabel(
+                    details_frame,
+                    text=rating_text,
+                    font=ctk.CTkFont(size=13, weight="bold"),
+                    text_color=rating_color,
+                    anchor="w"
+                )
+                rating_label.grid(row=2, column=0, sticky="ew", pady=(5, 0))
+            except Exception as e:
+                log(f"Error displaying rating for restaurant {restaurant.name}: {e}")
+                # Fallback if rating calculation fails
+                no_rating_label = ctk.CTkLabel(
+                    details_frame,
+                    text="⭐ Rating unavailable",
+                    font=ctk.CTkFont(size=13),
+                    text_color=GRAY_TEXT_COLOR,
+                    anchor="w"
+                )
+                no_rating_label.grid(row=2, column=0, sticky="ew", pady=(5, 0))
 
             # Actions frame
             actions_frame = ctk.CTkFrame(restaurant_card, fg_color="transparent")
