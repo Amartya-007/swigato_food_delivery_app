@@ -67,6 +67,33 @@ class MenuItem:
             conn.close()
 
     @staticmethod
+    def search(search_term):
+        """
+        Search for menu items by name or description.
+        """
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        items = []
+        try:
+            # Case-insensitive search
+            query = "SELECT * FROM menu_items WHERE name LIKE ? OR description LIKE ?"
+            cursor.execute(query, (f'%{search_term}%', f'%{search_term}%'))
+            rows = cursor.fetchall()
+            log(f"Found {len(rows)} menu items matching '{search_term}'")
+            for row in rows:
+                items.append(MenuItem(**dict(row)))
+            return items
+        except sqlite3.Error as e:
+            log(f"SQLite error searching menu items for '{search_term}': {e}")
+            return []
+        except Exception as e:
+            log(f"General error searching menu items: {e}")
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
     def get_for_restaurant(restaurant_id):
         log(f"MenuItem.get_for_restaurant called for restaurant_id: {restaurant_id}") 
         conn = get_db_connection()

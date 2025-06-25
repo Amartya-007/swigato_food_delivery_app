@@ -15,7 +15,9 @@ class User:
         self.is_admin = is_admin # Added is_admin
 
     def __repr__(self):
-        return f"<User {self.username} (ID: {self.user_id}) Admin: {self.is_admin}>" # Updated repr    def update_address(self, new_address):
+        return f"<User {self.username} (ID: {self.user_id}) Admin: {self.is_admin}>" # Updated repr
+    
+    def update_address(self, new_address):
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
