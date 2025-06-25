@@ -1,55 +1,101 @@
 import customtkinter as ctk
+import os
 from gui_Light import (BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, 
                        BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, 
                        GRAY_TEXT_COLOR, set_swigato_icon)
 from utils.logger import log
+from utils.image_loader import load_image
 from cart.cart_ui import CartUtilities
 
 class FavoriteRestaurantCard(ctk.CTkFrame):
     """Card component for favorite restaurant"""
     
-    def __init__(self, parent, restaurant, show_menu_callback, **kwargs):
+    def __init__(self, parent, restaurant, show_menu_callback, app_ref, **kwargs):
         super().__init__(parent, **kwargs)
         self.restaurant = restaurant
         self.show_menu_callback = show_menu_callback
+        self.app_ref = app_ref
         
         self.setup_card()
     
     def setup_card(self):
-        """Set up the restaurant card UI"""
+        """Set up the restaurant card UI with image support"""
         self.configure(
             fg_color=FRAME_FG_COLOR,
-            corner_radius=12,
+            corner_radius=16,
             border_width=1,
-            border_color=FRAME_BORDER_COLOR
+            border_color=FRAME_BORDER_COLOR,
+            height=120
         )
         
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=0)  # Image
+        self.grid_columnconfigure(1, weight=1)  # Details
+        self.grid_columnconfigure(2, weight=0)  # Button
+        self.pack_propagate(False)
+        
+        # Restaurant image
+        image_container = ctk.CTkFrame(
+            self, 
+            fg_color="transparent", 
+            corner_radius=12
+        )
+        image_container.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
+        
+        image_label = None
+        if self.restaurant.image_filename:
+            project_root = self.app_ref.project_root if hasattr(self.app_ref, 'project_root') else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            image_path = os.path.join(project_root, "assets", "restaurants", self.restaurant.image_filename)
+            log(f"Attempting to load restaurant image from: {image_path}")
+            ctk_image = load_image(image_path, size=(80, 80))
+            if ctk_image:
+                image_label = ctk.CTkLabel(
+                    image_container, 
+                    image=ctk_image, 
+                    text="", 
+                    corner_radius=12
+                )
+                image_label.pack()
+        
+        if not image_label:
+            # Modern placeholder with restaurant icon
+            image_label = ctk.CTkLabel(
+                image_container, 
+                text="🏪", 
+                width=80, 
+                height=80,
+                fg_color=PRIMARY_COLOR,
+                text_color="white",
+                font=ctk.CTkFont(size=32),
+                corner_radius=12
+            )
+            image_label.pack()
         
         # Restaurant info
         info_frame = ctk.CTkFrame(self, fg_color="transparent")
-        info_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=15)
+        info_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=20)
+        info_frame.grid_rowconfigure(0, weight=0)
+        info_frame.grid_rowconfigure(1, weight=0)
+        info_frame.grid_rowconfigure(2, weight=1)
         
         rest_label = ctk.CTkLabel(
             info_frame,
-            text=f"🍽️ {self.restaurant.name}",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            text=self.restaurant.name,
+            font=ctk.CTkFont(size=18, weight="bold"),
             text_color=TEXT_COLOR,
             anchor="w"
         )
-        rest_label.pack(anchor="w")
+        rest_label.grid(row=0, column=0, sticky="ew")
         
         # Add cuisine type if available
         if hasattr(self.restaurant, 'cuisine_type') and self.restaurant.cuisine_type:
             cuisine_label = ctk.CTkLabel(
                 info_frame,
                 text=f"🍴 {self.restaurant.cuisine_type}",
-                font=ctk.CTkFont(size=12),
+                font=ctk.CTkFont(size=14),
                 text_color=GRAY_TEXT_COLOR,
                 anchor="w"
             )
-            cuisine_label.pack(anchor="w", pady=(2, 0))
+            cuisine_label.grid(row=1, column=0, sticky="ew", pady=(5, 0))
         
         # View Menu button
         view_menu_btn = ctk.CTkButton(
@@ -59,12 +105,12 @@ class FavoriteRestaurantCard(ctk.CTkFrame):
             fg_color=PRIMARY_COLOR,
             hover_color=BUTTON_HOVER_COLOR,
             text_color="white",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            width=100,
-            height=35,
-            corner_radius=8
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=120,
+            height=40,
+            corner_radius=12
         )
-        view_menu_btn.grid(row=0, column=1, padx=(0, 20), pady=15, sticky="e")
+        view_menu_btn.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="e")
 
 
 class FavoriteMenuItemCard(ctk.CTkFrame):
@@ -80,38 +126,81 @@ class FavoriteMenuItemCard(ctk.CTkFrame):
         self.setup_card()
     
     def setup_card(self):
-        """Set up the menu item card UI"""
+        """Set up the menu item card UI with image support"""
         self.configure(
             fg_color=FRAME_FG_COLOR,
-            corner_radius=12,
+            corner_radius=16,
             border_width=1,
-            border_color=FRAME_BORDER_COLOR
+            border_color=FRAME_BORDER_COLOR,
+            height=120
         )
         
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=0)  # Image
+        self.grid_columnconfigure(1, weight=1)  # Details
+        self.grid_columnconfigure(2, weight=0)  # Button
+        self.pack_propagate(False)
+        
+        # Menu item image
+        image_container = ctk.CTkFrame(
+            self, 
+            fg_color="transparent", 
+            corner_radius=12
+        )
+        image_container.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
+        
+        image_label = None
+        if hasattr(self.menu_item, 'image_filename') and self.menu_item.image_filename:
+            project_root = self.app_ref.project_root if hasattr(self.app_ref, 'project_root') else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            image_path = os.path.join(project_root, "assets", "menu_items", self.menu_item.image_filename)
+            log(f"Attempting to load menu item image from: {image_path}")
+            ctk_image = load_image(image_path, size=(80, 80))
+            if ctk_image:
+                image_label = ctk.CTkLabel(
+                    image_container, 
+                    image=ctk_image, 
+                    text="", 
+                    corner_radius=12
+                )
+                image_label.pack()
+        
+        if not image_label:
+            # Modern placeholder with food icon
+            image_label = ctk.CTkLabel(
+                image_container, 
+                text="🍽️", 
+                width=80, 
+                height=80,
+                fg_color=SUCCESS_COLOR,
+                text_color="white",
+                font=ctk.CTkFont(size=32),
+                corner_radius=12
+            )
+            image_label.pack()
         
         # Item info
         info_frame = ctk.CTkFrame(self, fg_color="transparent")
-        info_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=15)
+        info_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=20)
+        info_frame.grid_rowconfigure(0, weight=0)
+        info_frame.grid_rowconfigure(1, weight=0)
+        info_frame.grid_rowconfigure(2, weight=1)
         
         item_label = ctk.CTkLabel(
             info_frame,
-            text=f"🍽️ {self.menu_item.name}",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            text=self.menu_item.name,
+            font=ctk.CTkFont(size=18, weight="bold"),
             text_color=TEXT_COLOR,
             anchor="w"
         )
-        item_label.pack(anchor="w")
+        item_label.grid(row=0, column=0, sticky="ew")
         
         price_label = ctk.CTkLabel(
             info_frame,
             text=f"💰 ₹{self.menu_item.price}",
-            font=ctk.CTkFont(size=12),
+            font=ctk.CTkFont(size=14),
             text_color=GRAY_TEXT_COLOR,
             anchor="w"
         )
-        price_label.pack(anchor="w", pady=(2, 0))
+        price_label.grid(row=1, column=0, sticky="ew", pady=(5, 0))
         
         # Add to Cart button
         add_to_cart_btn = ctk.CTkButton(
@@ -121,12 +210,12 @@ class FavoriteMenuItemCard(ctk.CTkFrame):
             fg_color=SUCCESS_COLOR,
             hover_color="#388E3C",
             text_color="white",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            width=100,
-            height=35,
-            corner_radius=8
+            font=ctk.CTkFont(size=14, weight="bold"),
+            width=120,
+            height=40,
+            corner_radius=12
         )
-        add_to_cart_btn.grid(row=0, column=1, padx=(0, 20), pady=15, sticky="e")
+        add_to_cart_btn.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="e")
     
     def add_to_cart(self):
         """Add item to cart using cart utilities, with error handling"""
@@ -217,7 +306,8 @@ class FavoritesListComponent(ctk.CTkScrollableFrame):
                 rest_card = FavoriteRestaurantCard(
                     self,
                     restaurant=rest,
-                    show_menu_callback=self.show_menu_callback
+                    show_menu_callback=self.show_menu_callback,
+                    app_ref=self.app_ref
                 )
                 rest_card.grid(row=row, column=0, sticky="ew", padx=20, pady=(0, 10))
                 row += 1
