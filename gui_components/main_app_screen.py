@@ -523,7 +523,7 @@ class MainAppScreen(ctk.CTkFrame):
             details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
             details_frame.grid_columnconfigure(0, weight=1)
 
-            # Order ID and date
+            # Order ID and date with restaurant name
             order_header = ctk.CTkLabel(
                 details_frame,
                 text=f"Order #{order.order_id} • {order.order_date.strftime('%B %d, %Y')}",
@@ -533,26 +533,58 @@ class MainAppScreen(ctk.CTkFrame):
             )
             order_header.grid(row=0, column=0, sticky="ew", pady=(0, 5))
 
+            # Restaurant name (if available)
+            if hasattr(order, 'restaurant_name') and order.restaurant_name:
+                restaurant_info = ctk.CTkLabel(
+                    details_frame,
+                    text=f"🏪 {order.restaurant_name}",
+                    font=ctk.CTkFont(size=14),
+                    text_color="#4B5563",
+                    anchor="w"
+                )
+                restaurant_info.grid(row=1, column=0, sticky="ew", pady=(0, 5))
+
             # Order total
             total_label = ctk.CTkLabel(
                 details_frame,
-                text=f"Total: ₹{order.total_amount:.2f}",
-                font=ctk.CTkFont(size=18, weight="bold"),
+                text=f"💰 Total: ₹{order.total_amount:.2f}",
+                font=ctk.CTkFont(size=16, weight="bold"),
                 text_color=PRIMARY_COLOR,
                 anchor="w"
             )
-            total_label.grid(row=1, column=0, sticky="ew", pady=(0, 5))
+            total_label.grid(row=2, column=0, sticky="ew", pady=(0, 5))
 
             # Only one status label, below the total, with correct color
             status_color = self.get_status_color(order.status)
             status_display = ctk.CTkLabel(
                 details_frame,
-                text=f"Status: {order.status.title()}",
+                text=f"📦 Status: {order.status.title()}",
                 font=ctk.CTkFont(size=14, weight="bold"),
                 text_color=status_color,
                 anchor="w"
             )
-            status_display.grid(row=2, column=0, sticky="ew", pady=(0, 5))
+            status_display.grid(row=3, column=0, sticky="ew", pady=(0, 5))
+
+            # Delivery address (if available)
+            if hasattr(order, 'delivery_address') and order.delivery_address:
+                address_display = ctk.CTkLabel(
+                    details_frame,
+                    text=f"📍 Delivered to: {order.delivery_address}",
+                    font=ctk.CTkFont(size=12),
+                    text_color="#6B7280",
+                    anchor="w"
+                )
+                address_display.grid(row=4, column=0, sticky="ew", pady=(0, 5))
+            else:
+                # Show "Address not available" for older orders without address data
+                address_display = ctk.CTkLabel(
+                    details_frame,
+                    text="📍 Address: Not available",
+                    font=ctk.CTkFont(size=12),
+                    text_color="#9CA3AF",
+                    anchor="w"
+                )
+                address_display.grid(row=4, column=0, sticky="ew", pady=(0, 5))
 
     def load_restaurants(self):
         log("MainAppScreen.load_restaurants called")
