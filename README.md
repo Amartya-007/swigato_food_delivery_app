@@ -120,6 +120,10 @@ This project started as a CLI app for a college assignment, but then I got carri
 
 ---
 
+Here's your updated **"How To Run (a.k.a. Become a Swigato Power User)"** guide with virtual environment setup included:
+
+---
+
 ## 🧑‍🔬 How To Run (a.k.a. Become a Swigato Power User)
 
 1. **Clone the repo:**
@@ -129,13 +133,29 @@ This project started as a CLI app for a college assignment, but then I got carri
    cd swigato_project
    ```
 
-2. **Install the dependencies:**
+2. **(Optional but Recommended) Create and activate a virtual environment:**
+
+   **Windows:**
+
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+   **macOS/Linux:**
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install the dependencies:**
 
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Start the GUI app:**
+4. **Start the GUI app:**
 
    ```bash
    python gui_app.py
@@ -144,11 +164,10 @@ This project started as a CLI app for a college assignment, but then I got carri
    Or, for nostalgia, run the CLI version:
 
    ```bash
-   
    python main.py
    ```
 
-4. **First run?**
+5. **First run?**
    - The app creates the database, tables, and a default admin user for you.
    - Sample restaurants and menu items are added so you’re not staring at an empty screen.
 
