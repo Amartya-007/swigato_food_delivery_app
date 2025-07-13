@@ -427,6 +427,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                 logger.info(f"New menu item image '{img_basename}' copied to '{target_path}'.")
                 final_image_filename = img_basename
             except Exception as e:
+                target_path = os.path.join(MENU_ITEM_IMAGE_ASSETS_DIR, os.path.basename(self.current_add_item_image_path))
                 logger.error(f"Error copying new menu item image '{self.current_add_item_image_path}' to '{target_path}': {e}")
                 self.add_item_status_label.configure(text=f"Error saving image: {e}", text_color=ERROR_COLOR)
                 return 
@@ -783,8 +784,8 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
             logger.info("Restaurant image selection cancelled.")
 
     def _display_image(self, image_path, image_label_widget, default_img_path=None, target_size=(200,150)):
+        effective_image_path = image_path  # Initialize outside try block
         try:
-            effective_image_path = image_path
             if not os.path.exists(effective_image_path):
                 logger.warning(f"Image not found at path: {effective_image_path}. Attempting default.")
                 effective_image_path = default_img_path or DEFAULT_RESTAURANT_IMAGE 
@@ -835,6 +836,7 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                         logger.info(f"Image {img_basename} already in target directory; skipping copy.")
                     final_image_filename = img_basename
                 except Exception as e:
+                    target_path = os.path.join("assets", "restaurants", os.path.basename(self.restaurant_image_path))
                     logger.error(f"Error copying image {self.restaurant_image_path} to {target_path}: {e}")
                     self.details_status_label.configure(text=f"Error saving image: {e}", text_color=ERROR_COLOR)
                     final_image_filename = self.current_restaurant.image_filename if self.current_restaurant else None

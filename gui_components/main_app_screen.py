@@ -74,7 +74,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Modern Profile button (now rightmost in header, more prominent)
         profile_btn = ctk.CTkButton(
             header_frame,
-            text="👤 Profile",
+            text="Profile",
             width=120,
             height=45,
             fg_color=PRIMARY_COLOR,
@@ -1097,12 +1097,12 @@ class MainAppScreen(ctk.CTkFrame):
         self.profile_tabview.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="nsew")
         
         # Add tabs
-        self.profile_tabview.add("👤 Profile")
-        self.profile_tabview.add("🔒 Security") 
-        self.profile_tabview.add("⚙️ Settings")
+        self.profile_tabview.add("Profile")
+        self.profile_tabview.add("Security") 
+        self.profile_tabview.add("Settings")
         
         # Set default tab
-        self.profile_tabview.set("👤 Profile")
+        self.profile_tabview.set("Profile")
         
         # Setup tab contents
         self.setup_profile_tab()
@@ -1111,7 +1111,7 @@ class MainAppScreen(ctk.CTkFrame):
 
     def setup_profile_tab(self):
         """Setup the profile information tab"""
-        profile_tab = self.profile_tabview.tab("👤 Profile")
+        profile_tab = self.profile_tabview.tab("Profile")
         profile_tab.grid_columnconfigure(0, weight=1)
           # Profile content frame - no scrolling needed with larger window
         content_frame = ctk.CTkFrame(
@@ -1307,7 +1307,7 @@ class MainAppScreen(ctk.CTkFrame):
 
     def setup_security_tab(self):
         """Setup the security/password tab"""
-        security_tab = self.profile_tabview.tab("🔒 Security")
+        security_tab = self.profile_tabview.tab("Security")
         security_tab.grid_columnconfigure(0, weight=1)
           # Security content frame - no scrolling needed with larger window
         content_frame = ctk.CTkFrame(
@@ -1405,12 +1405,12 @@ class MainAppScreen(ctk.CTkFrame):
         # Change Password Button
         change_pw_btn = ctk.CTkButton(
             content_frame,
-            text="🔒 Change Password",
+            text="Change Password",
             command=self.change_password,
             fg_color=SECONDARY_COLOR,
             hover_color=BUTTON_HOVER_COLOR,
             text_color="white",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             width=200,
             height=40,
             corner_radius=10
@@ -1430,11 +1430,11 @@ class MainAppScreen(ctk.CTkFrame):
         tips_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=10)
         
         tips_text = """
-    • Use a strong password with at least 8 characters
-    • Include uppercase, lowercase, numbers, and symbols
-    • Don't share your password with anyone
-    • Log out from shared devices
-    • Enable two-factor authentication when available
+            • Use a strong password with at least 8 characters
+            • Include uppercase, lowercase, numbers, and symbols
+            • Don't share your password with anyone
+            • Log out from shared devices
+            • Enable two-factor authentication when available
         """
         
         tips_display = ctk.CTkLabel(
@@ -1448,7 +1448,7 @@ class MainAppScreen(ctk.CTkFrame):
 
     def setup_settings_tab(self):
         """Setup the settings tab"""
-        settings_tab = self.profile_tabview.tab("⚙️ Settings")
+        settings_tab = self.profile_tabview.tab("Settings")
         settings_tab.grid_columnconfigure(0, weight=1)
           # Settings content frame - no scrolling needed with larger window
         content_frame = ctk.CTkFrame(
@@ -1462,7 +1462,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Preferences Section
         prefs_label = ctk.CTkLabel(
             content_frame,
-            text="🎨 Preferences",
+            text="Preferences",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
@@ -1482,7 +1482,14 @@ class MainAppScreen(ctk.CTkFrame):
             values=["Light", "Dark", "Auto"],
             variable=self.theme_var,
             font=ctk.CTkFont(size=14),
-            width=200
+            width=200,
+            fg_color=PRIMARY_COLOR,
+            button_color=PRIMARY_COLOR,
+            button_hover_color=BUTTON_HOVER_COLOR,
+            dropdown_fg_color="white",
+            dropdown_hover_color="#F3F4F6",
+            text_color="white",
+            dropdown_text_color=TEXT_COLOR
         )
         theme_menu.grid(row=1, column=1, sticky="w", pady=5)
         
@@ -1499,19 +1506,23 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Enable notifications",
             variable=self.notifications_var,
-            font=ctk.CTkFont(size=12)
+            font=ctk.CTkFont(size=12),
+            progress_color=PRIMARY_COLOR,
+            button_color="white",
+            button_hover_color="#F3F4F6",
+            text_color=TEXT_COLOR
         )
         notifications_switch.grid(row=2, column=1, sticky="w", pady=5)
         
         # Save Preferences Button
         save_prefs_btn = ctk.CTkButton(
             content_frame,
-            text="💾 Save Preferences",
+            text="Save Preferences",
             command=self.save_preferences,
             fg_color=PRIMARY_COLOR,
             hover_color=BUTTON_HOVER_COLOR,
             text_color="white",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             width=200,
             height=40,
             corner_radius=10
@@ -1521,7 +1532,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Account Actions Section
         actions_label = ctk.CTkLabel(
             content_frame,
-            text="🚪 Account Actions",
+            text="Account Actions",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
@@ -1530,12 +1541,12 @@ class MainAppScreen(ctk.CTkFrame):
         # Logout Button
         logout_btn = ctk.CTkButton(
             content_frame,
-            text="🚪 Logout",
+            text="Logout",
             command=self.logout_from_profile,
             fg_color=SECONDARY_COLOR,
             hover_color="#B91C1C",
             text_color="white",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             width=200,
             height=40,
             corner_radius=10
@@ -1555,9 +1566,9 @@ class MainAppScreen(ctk.CTkFrame):
         info_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=10)
         
         app_info = """
-🍽️ Swigato Food Delivery App
-Version: 1.0.0
-Developed with ❤️ using Python & CustomTkinter
+                Swigato Food Delivery App
+                Version: 1.0.0
+                Developed by Amartya Vishwakarma
         """
         
         info_display = ctk.CTkLabel(
