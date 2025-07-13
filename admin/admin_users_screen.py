@@ -4,17 +4,18 @@ import logging
 from tkinter import messagebox
 import os # For icon path
 
-# Specific Admin Theme and Font constants are used
+# Import the centralized modern admin theme
+from admin.modern_admin_theme import (
+    MODERN_ADMIN_BG, MODERN_ADMIN_CARD, MODERN_ADMIN_ACCENT, MODERN_ADMIN_TEXT,
+    MODERN_ADMIN_TEXT_SECONDARY, MODERN_ADMIN_BUTTON, MODERN_ADMIN_BUTTON_HOVER,
+    MODERN_ADMIN_FONT_FAMILY, MODERN_ADMIN_FONT_SIZES, MODERN_ADMIN_SPACING,
+    MODERN_ADMIN_BORDER_RADIUS, MODERN_ADMIN_STATUS, 
+    MODERN_ADMIN_TABLE, ERROR_COLOR
+)
+
+# Import remaining utility functions from gui_Light
 from gui_Light import (
-    FONT_FAMILY, HEADING_FONT_SIZE, BODY_FONT_SIZE, BUTTON_FONT_SIZE, # Font definitions
-    ADMIN_BACKGROUND_COLOR, ADMIN_FRAME_FG_COLOR, ADMIN_TEXT_COLOR,      # Admin basic colors
-    ADMIN_PRIMARY_ACCENT_COLOR, ADMIN_SECONDARY_ACCENT_COLOR,         # Admin accent colors
-    ADMIN_TABLE_HEADER_BG_COLOR, ADMIN_TABLE_HEADER_TEXT_COLOR,     # Admin Table specific colors
-    ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR,
-    ADMIN_TABLE_BORDER_COLOR, ADMIN_TABLE_TEXT_COLOR,
-    ADMIN_BUTTON_FG_COLOR, ADMIN_BUTTON_HOVER_COLOR, ADMIN_BUTTON_TEXT_COLOR, ADMIN_PRIMARY_COLOR, # Admin Button colors
-    ERROR_COLOR, # Added ERROR_COLOR
-    set_swigato_icon, safe_focus, center_window # Added utilities
+    set_swigato_icon, safe_focus, center_window
 )
 from users.models import User # Import the User model
 from utils.database import get_db_connection # For direct DB operations if needed, though User model should handle most
@@ -26,7 +27,7 @@ ICON_PATH = os.path.join("assets", "swigato_icon.ico")
 
 class AdminUsersScreen(ctk.CTkFrame): # Renamed class
     def __init__(self, master, app_callbacks, user, **kwargs): # Removed users_data_list
-        super().__init__(master, fg_color=ADMIN_BACKGROUND_COLOR, **kwargs)
+        super().__init__(master, fg_color=MODERN_ADMIN_BG, **kwargs)
         self.app_callbacks = app_callbacks
         self.loggedInUser = user # Logged-in admin user
         self.current_view_users = [] # To store the currently displayed (filtered/sorted) user objects
@@ -40,25 +41,32 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.actions_column_index = 4 # Combined actions column
         self.current_edit_user_id = None # Will store the ID of the user being edited
 
-        # Title
-        title_label = ctk.CTkLabel(self, text="User Management", font=ctk.CTkFont(family=FONT_FAMILY, size=HEADING_FONT_SIZE, weight="bold"), text_color=ADMIN_TEXT_COLOR)
-        title_label.grid(row=0, column=0, padx=20, pady=(10, 10), sticky="nw") # Adjusted pady
+        # Title with improved typography
+        title_label = ctk.CTkLabel(
+            self, 
+            text="User Management", 
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["title"], weight="bold"), 
+            text_color=MODERN_ADMIN_TEXT
+        )
+        title_label.grid(row=0, column=0, padx=30, pady=(25, 15), sticky="nw")
 
-        # Controls Frame
+        # Controls Frame with modern styling
         self.controls_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.controls_frame.grid(row=1, column=0, columnspan=2, padx=20, pady=(10,10), sticky="ew")
+        self.controls_frame.grid(row=1, column=0, columnspan=2, padx=30, pady=(10,20), sticky="ew")
 
         # Left part of controls (Search, Filter, Clear)
         left_controls_subframe = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
-        left_controls_subframe.pack(side="left", fill="x", expand=True, padx=(0,10))
+        left_controls_subframe.pack(side="left", fill="x", expand=True, padx=(0,15))
 
         self.search_entry = ctk.CTkEntry(
             left_controls_subframe,
             placeholder_text="Search ID, Name, Address...",
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-            width=300 
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            width=320,
+            height=45,
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"]
         )
-        self.search_entry.pack(side="left", padx=(0,10), pady=5)
+        self.search_entry.pack(side="left", padx=(0,15), pady=8)
         self.search_entry.bind("<Return>", lambda event: self._apply_filters_and_refresh_table())
 
         self.admin_filter_var = ctk.StringVar(value="All")
@@ -66,28 +74,32 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
             left_controls_subframe,
             variable=self.admin_filter_var,
             values=["All", "Admin", "Non-Admin"],
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-            dropdown_font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            dropdown_font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
             command=lambda choice: self._apply_filters_and_refresh_table(),
-            fg_color=ADMIN_BUTTON_FG_COLOR, # Consistent button styling
-            button_color=ADMIN_BUTTON_FG_COLOR,
-            button_hover_color=ADMIN_BUTTON_HOVER_COLOR,
-            text_color_disabled=ADMIN_TEXT_COLOR # Ensure text is visible
+            fg_color=MODERN_ADMIN_BUTTON,
+            button_color=MODERN_ADMIN_BUTTON,
+            button_hover_color=MODERN_ADMIN_BUTTON_HOVER,
+            text_color_disabled=MODERN_ADMIN_TEXT,
+            height=45,
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"],
+            width=140
         )
-        self.admin_filter_menu.pack(side="left", padx=(0,10), pady=5)
+        self.admin_filter_menu.pack(side="left", padx=(0,15), pady=8)
 
         self.clear_filters_button = ctk.CTkButton(
             left_controls_subframe,
             text="Clear Filters",
             command=self._clear_filters_and_refresh_table,
-            fg_color=ADMIN_SECONDARY_ACCENT_COLOR, 
-            hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
-            text_color=ADMIN_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8,
-            width=120 # Adjusted width
+            fg_color=MODERN_ADMIN_TEXT_SECONDARY,
+            hover_color=MODERN_ADMIN_ACCENT,
+            text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"],
+            width=140,
+            height=45
         )
-        self.clear_filters_button.pack(side="left", padx=(0,10), pady=5)
+        self.clear_filters_button.pack(side="left", padx=(0,15), pady=8)
 
         # Right part of controls (Add User)
         right_controls_subframe = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
@@ -97,17 +109,23 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
             right_controls_subframe,
             text="Add New User",
             command=self._open_add_user_dialog,
-            fg_color=ADMIN_BUTTON_FG_COLOR,
-            hover_color=ADMIN_BUTTON_HOVER_COLOR,
-            text_color=ADMIN_BUTTON_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8
+            fg_color=MODERN_ADMIN_BUTTON,
+            hover_color=MODERN_ADMIN_BUTTON_HOVER,
+            text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"],
+            height=45,
+            width=160
         )
-        self.add_user_button.pack(pady=5)
+        self.add_user_button.pack(pady=8)
 
-        # Frame for the table
-        self.table_frame = ctk.CTkFrame(self, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
-        self.table_frame.grid(row=2, column=0, columnspan=2, padx=20, pady=(0,20), sticky="nsew") # Removed top pady from table_frame
+        # Frame for the table with modern styling
+        self.table_frame = ctk.CTkFrame(
+            self, 
+            fg_color=MODERN_ADMIN_CARD, 
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"]
+        )
+        self.table_frame.grid(row=2, column=0, columnspan=2, padx=30, pady=(0,30), sticky="nsew")
         self.table_frame.grid_columnconfigure(0, weight=1)
         self.table_frame.grid_rowconfigure(0, weight=1)
 
@@ -133,50 +151,50 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.add_user_dialog.title("Swigato - Add New User")
         set_swigato_icon(self.add_user_dialog)
         center_window(self.add_user_dialog, 400, 450)
-        self.add_user_dialog.configure(fg_color=ADMIN_FRAME_FG_COLOR) # Set Toplevel background
+        self.add_user_dialog.configure(fg_color=MODERN_ADMIN_BG) # Set Toplevel background
         self.add_user_dialog.transient(self.master)  # type: ignore[arg-type]
         self.add_user_dialog.grab_set() # Modal behavior
 
-        dialog_main_frame = ctk.CTkFrame(self.add_user_dialog, fg_color=ADMIN_FRAME_FG_COLOR) # Use ADMIN_FRAME_FG_COLOR
+        dialog_main_frame = ctk.CTkFrame(self.add_user_dialog, fg_color=MODERN_ADMIN_CARD, corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"]) # Use modern theme
         dialog_main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
         # Username
-        ctk.CTkLabel(dialog_main_frame, text="Username:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.username_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                               text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Username:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.username_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                               text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.username_entry_add.pack(fill="x", pady=(0,10))
 
         # Password
-        ctk.CTkLabel(dialog_main_frame, text="Password:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.password_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                              text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Password:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.password_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                              text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.password_entry_add.pack(fill="x", pady=(0,10))
         
         # Confirm Password
-        ctk.CTkLabel(dialog_main_frame, text="Confirm Password:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.confirm_password_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                                      text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Confirm Password:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.confirm_password_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                                      text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.confirm_password_entry_add.pack(fill="x", pady=(0,10))
 
         # Address
-        ctk.CTkLabel(dialog_main_frame, text="Address:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.address_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                             text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Address:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.address_entry_add = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                             text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.address_entry_add.pack(fill="x", pady=(0,10))
 
         # Admin Flag
         self.is_admin_var_add = ctk.BooleanVar()
         admin_switch = ctk.CTkSwitch(dialog_main_frame, text="Is Admin?", variable=self.is_admin_var_add,
-                                      font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                      text_color=ADMIN_TEXT_COLOR,
-                                      progress_color=ADMIN_PRIMARY_COLOR, # Uses ADMIN_PRIMARY_COLOR
-                                      fg_color=ADMIN_SECONDARY_ACCENT_COLOR, # Background of the switch
-                                      button_color=ADMIN_PRIMARY_COLOR, # Color of the switch knob
-                                      button_hover_color=ADMIN_BUTTON_HOVER_COLOR)
+                                      font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                      text_color=MODERN_ADMIN_TEXT,
+                                      progress_color=MODERN_ADMIN_ACCENT,
+                                      fg_color=MODERN_ADMIN_TEXT_SECONDARY,
+                                      button_color=MODERN_ADMIN_ACCENT,
+                                      button_hover_color=MODERN_ADMIN_BUTTON_HOVER)
         admin_switch.pack(anchor="w", pady=(0,15))
 
         # Error Label (initially hidden)
-        self.error_label_add_user = ctk.CTkLabel(dialog_main_frame, text="", text_color=ERROR_COLOR, font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE-1)) # ERROR_COLOR is fine
+        self.error_label_add_user = ctk.CTkLabel(dialog_main_frame, text="", text_color=ERROR_COLOR, font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["small"]))
         self.error_label_add_user.pack(pady=(5,0))
 
         # Buttons Frame
@@ -185,17 +203,17 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
 
         save_button = ctk.CTkButton(
             buttons_frame, text="Save User", command=self._save_new_user,
-            fg_color=ADMIN_BUTTON_FG_COLOR, hover_color=ADMIN_BUTTON_HOVER_COLOR, text_color=ADMIN_BUTTON_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8
+            fg_color=MODERN_ADMIN_BUTTON, hover_color=MODERN_ADMIN_BUTTON_HOVER, text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"]
         )
         save_button.pack(side="right", padx=(10,0))
 
         cancel_button = ctk.CTkButton(
             buttons_frame, text="Cancel", command=self.add_user_dialog.destroy,
-            fg_color=ADMIN_SECONDARY_ACCENT_COLOR, hover_color=ADMIN_PRIMARY_ACCENT_COLOR, text_color=ADMIN_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8
+            fg_color=MODERN_ADMIN_TEXT_SECONDARY, hover_color=MODERN_ADMIN_ACCENT, text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"]
         )
         cancel_button.pack(side="right")
         
@@ -262,47 +280,47 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.edit_user_dialog.title(f"Swigato - Edit User - {user_to_edit_obj.username}")
         set_swigato_icon(self.edit_user_dialog)
         center_window(self.edit_user_dialog, 400, 530)
-        self.edit_user_dialog.configure(fg_color=ADMIN_FRAME_FG_COLOR) # Set Toplevel background
+        self.edit_user_dialog.configure(fg_color=MODERN_ADMIN_BG) # Set Toplevel background
         self.edit_user_dialog.transient(self.master)  # type: ignore[arg-type]
         self.edit_user_dialog.grab_set()
 
-        dialog_main_frame = ctk.CTkFrame(self.edit_user_dialog, fg_color=ADMIN_FRAME_FG_COLOR) # Use ADMIN_FRAME_FG_COLOR
+        dialog_main_frame = ctk.CTkFrame(self.edit_user_dialog, fg_color=MODERN_ADMIN_CARD, corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"]) # Use modern theme
         dialog_main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        ctk.CTkLabel(dialog_main_frame, text="Username:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.username_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                                text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Username:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.username_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                                text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.username_entry_edit.insert(0, user_to_edit_obj.username)
         self.username_entry_edit.pack(fill="x", pady=(0,10))
 
         # Password Fields (Optional: Leave blank to keep current password)
-        ctk.CTkLabel(dialog_main_frame, text="New Password (leave blank to keep current):", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(5,2))
-        self.password_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                               text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="New Password (leave blank to keep current):", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(5,2))
+        self.password_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                               text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.password_entry_edit.pack(fill="x", pady=(0,10))
 
-        ctk.CTkLabel(dialog_main_frame, text="Confirm New Password:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.confirm_password_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                                       text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Confirm New Password:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.confirm_password_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, show="*", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                                       text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.confirm_password_entry_edit.pack(fill="x", pady=(0,10))
 
-        ctk.CTkLabel(dialog_main_frame, text="Address:", font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE), text_color=ADMIN_TEXT_COLOR).pack(anchor="w", pady=(0,2))
-        self.address_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                              text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+        ctk.CTkLabel(dialog_main_frame, text="Address:", font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]), text_color=MODERN_ADMIN_TEXT).pack(anchor="w", pady=(0,2))
+        self.address_entry_edit = ctk.CTkEntry(dialog_main_frame, width=300, font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                              text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.address_entry_edit.insert(0, user_to_edit_obj.address if user_to_edit_obj.address else '') 
         self.address_entry_edit.pack(fill="x", pady=(0,10))
 
         self.is_admin_var_edit = ctk.BooleanVar(value=user_to_edit_obj.is_admin)
         admin_switch_edit = ctk.CTkSwitch(dialog_main_frame, text="Is Admin?", variable=self.is_admin_var_edit,
-                                      font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                      text_color=ADMIN_TEXT_COLOR,
-                                      progress_color=ADMIN_PRIMARY_COLOR, # Uses ADMIN_PRIMARY_COLOR
-                                      fg_color=ADMIN_SECONDARY_ACCENT_COLOR, # Background of the switch
-                                      button_color=ADMIN_PRIMARY_COLOR, # Color of the switch knob
-                                      button_hover_color=ADMIN_BUTTON_HOVER_COLOR)
+                                      font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                      text_color=MODERN_ADMIN_TEXT,
+                                      progress_color=MODERN_ADMIN_ACCENT,
+                                      fg_color=MODERN_ADMIN_TEXT_SECONDARY,
+                                      button_color=MODERN_ADMIN_ACCENT,
+                                      button_hover_color=MODERN_ADMIN_BUTTON_HOVER)
         admin_switch_edit.pack(anchor="w", pady=(0,15))
 
-        self.error_label_edit_user = ctk.CTkLabel(dialog_main_frame, text="", text_color=ERROR_COLOR, font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE-1)) # ERROR_COLOR is fine
+        self.error_label_edit_user = ctk.CTkLabel(dialog_main_frame, text="", text_color=ERROR_COLOR, font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["small"]))
         self.error_label_edit_user.pack(pady=(5,0))
 
         # --- Buttons ---
@@ -316,21 +334,21 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
 
         self.delete_button_edit_dialog = ctk.CTkButton(
             top_buttons_frame, text="Delete User",
-            command=self._confirm_delete_user_from_dialog, # This will now lead to password prompt
+            command=self._confirm_delete_user_from_dialog,
             fg_color=ERROR_COLOR,
             hover_color="#C00000",
             text_color="white",
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE, weight="bold"),
-            corner_radius=8
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"], weight="bold"),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"]
         )
         self.delete_button_edit_dialog.pack(side="left", padx=(0, 10))
 
         self.cancel_button_edit_dialog = ctk.CTkButton(
             top_buttons_frame, text="Cancel",
             command=lambda: (self.edit_user_dialog.destroy(), setattr(self, 'current_edit_user_id', None), setattr(self, 'current_editing_username_for_dialog', None)),
-            fg_color=ADMIN_SECONDARY_ACCENT_COLOR, hover_color=ADMIN_PRIMARY_ACCENT_COLOR, text_color=ADMIN_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8
+            fg_color=MODERN_ADMIN_TEXT_SECONDARY, hover_color=MODERN_ADMIN_ACCENT, text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"]
         )
         self.cancel_button_edit_dialog.pack(side="right", padx=(10, 0))
 
@@ -340,10 +358,10 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
 
         self.save_button_edit_dialog = ctk.CTkButton(
             bottom_buttons_frame, text="Save Changes", command=self._save_edited_user,
-            fg_color=ADMIN_BUTTON_FG_COLOR, hover_color=ADMIN_BUTTON_HOVER_COLOR, text_color=ADMIN_BUTTON_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8,
-            width=150 # Give it a decent width to appear centered
+            fg_color=MODERN_ADMIN_BUTTON, hover_color=MODERN_ADMIN_BUTTON_HOVER, text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"],
+            width=150
         )
         self.save_button_edit_dialog.pack(pady=(5,0), anchor="center")
 
@@ -379,26 +397,26 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.admin_password_prompt_dialog.title("Swigato - Admin Verification")
         set_swigato_icon(self.admin_password_prompt_dialog)
         center_window(self.admin_password_prompt_dialog, 380, 280)
-        self.admin_password_prompt_dialog.configure(fg_color=ADMIN_FRAME_FG_COLOR)
+        self.admin_password_prompt_dialog.configure(fg_color=MODERN_ADMIN_BG)
         self.admin_password_prompt_dialog.transient(self.master)  # type: ignore[arg-type] 
         self.admin_password_prompt_dialog.grab_set()
 
-        prompt_main_frame = ctk.CTkFrame(self.admin_password_prompt_dialog, fg_color=ADMIN_FRAME_FG_COLOR) # Use ADMIN_FRAME_FG_COLOR
+        prompt_main_frame = ctk.CTkFrame(self.admin_password_prompt_dialog, fg_color=MODERN_ADMIN_CARD, corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"]) # Use modern theme
         prompt_main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
         ctk.CTkLabel(prompt_main_frame, text=f"Enter your admin password to authorize deletion of user '{username_for_dialog}':",
-                     font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                     text_color=ADMIN_TEXT_COLOR, wraplength=360).pack(pady=(0,15))
+                     font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                     text_color=MODERN_ADMIN_TEXT, wraplength=360).pack(pady=(0,15))
 
         self.admin_password_entry_prompt = ctk.CTkEntry(prompt_main_frame, width=300, show="*",
-                                                     font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                                                     text_color=ADMIN_TEXT_COLOR, fg_color=ADMIN_TABLE_ROW_LIGHT_COLOR, border_color=ADMIN_TABLE_BORDER_COLOR) # Theme
+                                                     font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+                                                     text_color=MODERN_ADMIN_TEXT, fg_color=MODERN_ADMIN_BG, border_color=MODERN_ADMIN_ACCENT, corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"])
         self.admin_password_entry_prompt.pack(fill="x", pady=(0,10))
         safe_focus(self.admin_password_entry_prompt)
 
         self.admin_password_error_label = ctk.CTkLabel(prompt_main_frame, text="",
-                                                     text_color=ERROR_COLOR, # ERROR_COLOR is fine
-                                                     font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE-1))
+                                                     text_color=ERROR_COLOR,
+                                                     font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["small"]))
         self.admin_password_error_label.pack(pady=(0,15))
 
         buttons_prompt_frame = ctk.CTkFrame(prompt_main_frame, fg_color="transparent")
@@ -443,16 +461,16 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         confirm_delete_btn = ctk.CTkButton(
             buttons_prompt_frame, text="Confirm Delete", command=_on_confirm_delete_with_password,
             fg_color=ERROR_COLOR, hover_color="#C00000", text_color="white",
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE, weight="bold"),
-            corner_radius=8
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"], weight="bold"),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"]
         )
         confirm_delete_btn.pack(side="right", padx=(10,0))
 
         cancel_prompt_btn = ctk.CTkButton(
             buttons_prompt_frame, text="Cancel", command=_on_cancel_password_prompt,
-            fg_color=ADMIN_SECONDARY_ACCENT_COLOR, hover_color=ADMIN_PRIMARY_ACCENT_COLOR, text_color=ADMIN_TEXT_COLOR,
-            font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
-            corner_radius=8
+            fg_color=MODERN_ADMIN_TEXT_SECONDARY, hover_color=MODERN_ADMIN_ACCENT, text_color=MODERN_ADMIN_TEXT,
+            font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]),
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["medium"]
         )
         cancel_prompt_btn.pack(side="right")
 
@@ -666,7 +684,8 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.current_view_users = filtered_user_list 
         logger.debug(f"Displaying {len(self.current_view_users)} users after filtering.")
 
-        table_values = [["User ID", "Username", "Admin?", "Address", "Actions"]]
+        # Create modern table with enhanced styling
+        table_values = [["ID", "Username", "Admin?", "Address", "Actions"]]
         for user_item_view in self.current_view_users: 
             table_values.append([
                 user_item_view['id'],
@@ -680,8 +699,8 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
             self.user_table.destroy()
             self.user_table = None 
 
-        header_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE+1, weight="bold")
-        cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE)
+        header_font = ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"]+2, weight="bold")
+        cell_font = ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["medium"])
         
         if len(table_values) == 1 and (search_term or admin_filter_status != "All"):
              logger.info("No users match current filter criteria. Table will be empty or show header only.")
@@ -692,21 +711,24 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
             master=self.table_frame,
             values=table_values, 
             font=cell_font,  # type: ignore[arg-type]
-            colors=[ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR],
-            header_color=ADMIN_TABLE_HEADER_BG_COLOR,
-            corner_radius=8,
-            border_width=1,
-            border_color=ADMIN_TABLE_BORDER_COLOR,
-            command=self._on_cell_click
+            colors=[MODERN_ADMIN_TABLE["row_light"], MODERN_ADMIN_TABLE["row_dark"]],
+            header_color=MODERN_ADMIN_TABLE["header_bg"],
+            text_color=MODERN_ADMIN_TABLE["text"],
+            hover_color=MODERN_ADMIN_TABLE["hover"],
+            corner_radius=MODERN_ADMIN_BORDER_RADIUS["large"],
+            border_width=2,
+            border_color=MODERN_ADMIN_TABLE["border"],
+            command=self._on_cell_click,
+            wraplength=200
         )
-        self.user_table.pack(expand=True, fill="both", padx=10, pady=10)
+        self.user_table.pack(expand=True, fill="both", padx=MODERN_ADMIN_SPACING["xlarge"], pady=MODERN_ADMIN_SPACING["xlarge"])
 
         if table_values: 
-            self.user_table.edit_row(0, text_color=ADMIN_TABLE_HEADER_TEXT_COLOR, font=header_font, fg_color=ADMIN_TABLE_HEADER_BG_COLOR)
+            self.user_table.edit_row(0, text_color=MODERN_ADMIN_TABLE["header_text"], font=header_font, fg_color=MODERN_ADMIN_TABLE["header_bg"])
 
         for i in range(1, len(table_values)): 
-            current_bg_color = ADMIN_TABLE_ROW_LIGHT_COLOR if i % 2 != 0 else ADMIN_TABLE_ROW_DARK_COLOR
-            self.user_table.edit_row(i, fg_color=current_bg_color, text_color=ADMIN_TABLE_TEXT_COLOR, hover_color=ADMIN_PRIMARY_ACCENT_COLOR, font=cell_font)
+            current_bg_color = MODERN_ADMIN_TABLE["row_light"] if i % 2 != 0 else MODERN_ADMIN_TABLE["row_dark"]
+            self.user_table.edit_row(i, fg_color=current_bg_color, text_color=MODERN_ADMIN_TABLE["text"], hover_color=MODERN_ADMIN_TABLE["hover"], font=cell_font)
 
     def refresh_data(self):
         logger.info("AdminUsersScreen: Refreshing data (called externally)...")

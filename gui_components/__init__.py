@@ -1,5 +1,4 @@
 # GUI Components Package
-from .login_screen import LoginScreen
-from .signup_screen import SignupScreen
+from .main_app_screen import MainAppScreen
 
-__all__ = ['LoginScreen', 'SignupScreen']
+__all__ = ['MainAppScreen']

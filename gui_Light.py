@@ -27,38 +27,54 @@ SEMI_TRANSPARENT_OVERLAY = "black"  # Use solid black for overlay (Tkinter does 
 CLOSE_BUTTON_BG = "#EEEEEE"  # For close button background
 CLOSE_BUTTON_TEXT = "#333333"  # For close button text
 
-# Font Settings (unchanged)
-FONT_FAMILY = "Roboto"
-FONT_SIZE_NORMAL = 16
-FONT_SIZE_LARGE = 20
+# Font Settings - Modern Typography
+FONT_FAMILY = "Inter"  # Modern, clean font
+FONT_SIZE_NORMAL = 14
+FONT_SIZE_LARGE = 18
 
 # Derived font sizes for specific UI elements
-HEADING_FONT_SIZE = FONT_SIZE_LARGE  # e.g., 18
-BODY_FONT_SIZE = FONT_SIZE_NORMAL    # e.g., 14
-BUTTON_FONT_SIZE = FONT_SIZE_NORMAL  # e.g., 14
+HEADING_FONT_SIZE = 24              # Larger for main headings
+SUB_HEADING_FONT_SIZE = 18          # For section headers
+BODY_FONT_SIZE = FONT_SIZE_NORMAL   # Standard body text
+BUTTON_FONT_SIZE = FONT_SIZE_NORMAL # Button text
+SMALL_FONT_SIZE = 12                # For minor text
+
+# Font weights
+FONT_WEIGHT_BOLD = "bold"
+FONT_WEIGHT_MEDIUM = "normal"  # CTk doesn't support medium, using normal
+FONT_WEIGHT_REGULAR = "normal"
 
 # Other Constants
 WINDOW_ICON_PATH = "assets/swigato_icon.ico"
 APP_LOGO_PATH = "assets/swigato_icon.png"
 
-# Admin Panel Light Theme Colors
-ADMIN_BACKGROUND_COLOR = "#F0F2F5"  # Light Grayish Blue (Modern UI)
-ADMIN_TEXT_COLOR = "#282828"        # Dark grey for text
-ADMIN_PRIMARY_COLOR = "#0078FF"     # A modern, friendly Blue (can be used for accents or buttons)
-ADMIN_PRIMARY_ACCENT_COLOR = "#E6F3FF" # Very light blue for accents/hovers
-ADMIN_SECONDARY_ACCENT_COLOR = "#D0E7FF" # Slightly darker light blue
+# Admin Panel Modern Dark Theme Colors
+ADMIN_BACKGROUND_COLOR = "#1a1a1a"     # Dark background
+ADMIN_TEXT_COLOR = "#ffffff"           # White text
+ADMIN_PRIMARY_COLOR = "#ff5722"        # Modern orange (toned down from bright)
+ADMIN_PRIMARY_ACCENT_COLOR = "#2a2a2a" # Dark gray for accents
+ADMIN_SECONDARY_ACCENT_COLOR = "#3a3a3a" # Slightly lighter dark gray
 
-ADMIN_TABLE_HEADER_BG_COLOR = "#B3D9FF"  # Soft pastel blue
-ADMIN_TABLE_HEADER_TEXT_COLOR = "#000000" # Black
-ADMIN_TABLE_ROW_LIGHT_COLOR = "#FFFFFF"   # White
-ADMIN_TABLE_ROW_DARK_COLOR = "#F8F9FA"    # Very light grey (almost white)
-ADMIN_TABLE_BORDER_COLOR = "#DDE2E5"   # Light grey for borders
-ADMIN_TABLE_TEXT_COLOR = "#333333"       # Dark grey for cell text
-ADMIN_FRAME_FG_COLOR = "#FFFFFF"       # White for card-like elements within admin panel
+# Modern table colors with subtle contrast
+ADMIN_TABLE_HEADER_BG_COLOR = "#2d2d2d"  # Neutral dark gray header
+ADMIN_TABLE_HEADER_TEXT_COLOR = "#ffffff" # White header text
+ADMIN_TABLE_ROW_LIGHT_COLOR = "#242424"   # Zebra stripe light
+ADMIN_TABLE_ROW_DARK_COLOR = "#1f1f1f"    # Zebra stripe dark
+ADMIN_TABLE_BORDER_COLOR = "#404040"      # Subtle border
+ADMIN_TABLE_TEXT_COLOR = "#e0e0e0"        # Light gray text
+ADMIN_FRAME_FG_COLOR = "#232323"          # Card backgrounds
 
-ADMIN_BUTTON_FG_COLOR = "#007BFF"       # Primary blue for buttons
-ADMIN_BUTTON_HOVER_COLOR = "#0056b3"    # Darker blue for hover
-ADMIN_BUTTON_TEXT_COLOR = "#FFFFFF"     # White text for buttons
+# Modern button styling
+ADMIN_BUTTON_FG_COLOR = "#ff5722"         # Orange buttons
+ADMIN_BUTTON_HOVER_COLOR = "#e64a19"      # Darker orange hover
+ADMIN_BUTTON_TEXT_COLOR = "#ffffff"       # White button text
+
+# Additional modern colors
+ADMIN_CARD_BG_COLOR = "#2a2a2a"           # Card backgrounds
+ADMIN_SIDEBAR_COLOR = "#1f1f1f"           # Sidebar background
+ADMIN_HOVER_COLOR = "#333333"             # Hover states
+ADMIN_ACTIVE_COLOR = "#ff5722"            # Active states
+ADMIN_BORDER_COLOR = "#404040"            # General borders
 
 ICON_PATH = os.path.join("assets", "swigato_icon.ico")
 

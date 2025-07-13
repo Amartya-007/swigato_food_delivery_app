@@ -6,7 +6,7 @@ from gui_Light import (
     ADMIN_BACKGROUND_COLOR, ADMIN_FRAME_FG_COLOR, ADMIN_TEXT_COLOR,
     ADMIN_PRIMARY_ACCENT_COLOR, ADMIN_SECONDARY_ACCENT_COLOR,
     ADMIN_TABLE_HEADER_BG_COLOR, ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR,
-    ADMIN_TABLE_BORDER_COLOR, ADMIN_TABLE_TEXT_COLOR, ERROR_COLOR, ADMIN_PRIMARY_COLOR, ADMIN_BUTTON_TEXT_COLOR, ADMIN_BUTTON_HOVER_COLOR, set_swigato_icon
+    ADMIN_TABLE_BORDER_COLOR, ADMIN_TABLE_TEXT_COLOR, ERROR_COLOR, ADMIN_PRIMARY_COLOR, ADMIN_BUTTON_TEXT_COLOR, ADMIN_BUTTON_HOVER_COLOR, set_swigato_icon, center_window
 )
 from orders.models import Order
 
@@ -27,10 +27,10 @@ class AdminOrdersScreen(ctk.CTkFrame):
         title_label = ctk.CTkLabel(self, text="Orders Management",
                                    font=ctk.CTkFont(family=FONT_FAMILY, size=HEADING_FONT_SIZE, weight="bold"),
                                    text_color=ADMIN_TEXT_COLOR)
-        title_label.grid(row=0, column=0, padx=20, pady=(10, 10), sticky="nw")
+        title_label.grid(row=0, column=0, padx=25, pady=(20, 15), sticky="nw")
 
         self.table_frame = ctk.CTkFrame(self, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
-        self.table_frame.grid(row=1, column=0, padx=20, pady=(0,20), sticky="nsew")
+        self.table_frame.grid(row=1, column=0, padx=25, pady=(0,25), sticky="nsew")
         self.table_frame.grid_columnconfigure(0, weight=1)
         self.table_frame.grid_rowconfigure(0, weight=1)
 
@@ -98,7 +98,7 @@ class AdminOrdersScreen(ctk.CTkFrame):
         if len(table_data) == 1:
             ctk.CTkLabel(self.table_frame, text="No orders found.",
                          font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                         text_color=ADMIN_TEXT_COLOR).pack(expand=True, anchor="center", padx=20, pady=20)
+                         text_color=ADMIN_TEXT_COLOR).pack(expand=True, anchor="center", padx=25, pady=25)
             return
 
         cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE - 1)
@@ -118,12 +118,12 @@ class AdminOrdersScreen(ctk.CTkFrame):
             hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
             colors=[ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR],
             corner_radius=8,
-            border_width=1,
-            border_color=ADMIN_TABLE_BORDER_COLOR,
+            border_width=2,
+            border_color="#ff6b35",
             wraplength=180,
             command=self._on_cell_click if active_only else None
         )
-        self.orders_table.pack(expand=True, fill="both", padx=10, pady=10)
+        self.orders_table.pack(expand=True, fill="both", padx=20, pady=15)
         if active_only:
             self.actions_column_index = 8
 
@@ -144,11 +144,13 @@ class AdminOrdersScreen(ctk.CTkFrame):
         dialog.title(f"Change Status for Order {order.order_id}")
         dialog.geometry("420x280")
         set_swigato_icon(dialog)
+        center_window(dialog, 420, 280)
         dialog.configure(fg_color=ADMIN_BACKGROUND_COLOR)
         dialog.grab_set()
         ctk.CTkLabel(dialog, text=f"Order ID: {order.order_id}", font=ctk.CTkFont(family=FONT_FAMILY, size=18, weight="bold"), text_color=ADMIN_PRIMARY_COLOR, fg_color="transparent").pack(pady=(24,8))
         ctk.CTkLabel(dialog, text=f"Current Status: {order.status}", font=ctk.CTkFont(family=FONT_FAMILY, size=15), text_color=ADMIN_TEXT_COLOR, fg_color="transparent").pack(pady=6)
-        status_options = ["Pending Confirmation", "Preparing", "Out for Delivery", "Confirmed", "Delivered", "Cancelled", "Failed"]
+        # Logical order flow: Pending → Confirmed → Preparing → Out for Delivery → Delivered, with Cancelled/Failed as exceptions
+        status_options = ["Pending Confirmation", "Confirmed", "Preparing", "Out for Delivery", "Delivered", "Cancelled", "Failed"]
         status_var = ctk.StringVar(value=order.status)
         status_menu = ctk.CTkOptionMenu(dialog, variable=status_var, values=status_options, font=ctk.CTkFont(family=FONT_FAMILY, size=15), fg_color=ADMIN_PRIMARY_COLOR, text_color=ADMIN_BUTTON_TEXT_COLOR, dropdown_fg_color=ADMIN_PRIMARY_ACCENT_COLOR, dropdown_text_color=ADMIN_TEXT_COLOR)
         status_menu.pack(pady=12)

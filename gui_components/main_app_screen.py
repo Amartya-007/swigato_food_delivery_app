@@ -138,15 +138,10 @@ class MainAppScreen(ctk.CTkFrame):
         # Navigation items with modern icons - reordered with Home first
         nav_items = [
             ("home", "🏠", "Home"),  # Home moved to leftmost position
-        ]
-        
-        # Add Orders for non-admin users
-        if not (hasattr(self.user, "is_admin") and self.user.is_admin):
-            nav_items.append(("orders", "📋", "Orders"))        
-        nav_items.extend([
+            ("orders", "📋", "Orders"),  # Orders available for all users (including admins)
             ("favorites", "⭐", "Favorites"),
             ("cart", "🛒", "Cart")  # Cart moved to rightmost position
-        ])
+        ]
         
         # Add cart count if there are items in the cart
         cart_count = 0

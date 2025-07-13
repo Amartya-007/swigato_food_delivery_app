@@ -13,7 +13,7 @@ from gui_Light import (
 )
 from restaurants.models import Restaurant
 from tkinter import messagebox
-from .restaurant_management_screen import RestaurantManagementScreen
+from restaurants.restaurant_management_screen import RestaurantManagementScreen
 
 logger = logging.getLogger("swigato_app.admin_restaurants_screen")
 
@@ -33,10 +33,10 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
         title_label = ctk.CTkLabel(self, text="Restaurant Management",
                                    font=ctk.CTkFont(family=FONT_FAMILY, size=HEADING_FONT_SIZE, weight="bold"),
                                    text_color=ADMIN_TEXT_COLOR)
-        title_label.grid(row=0, column=0, padx=20, pady=(10, 10), sticky="nw")
+        title_label.grid(row=0, column=0, padx=25, pady=(20, 15), sticky="nw")
 
         controls_frame = ctk.CTkFrame(self, fg_color="transparent")
-        controls_frame.grid(row=1, column=0, padx=20, pady=(0,10), sticky="ew")
+        controls_frame.grid(row=1, column=0, padx=25, pady=(0,15), sticky="ew")
         
         add_button = ctk.CTkButton(controls_frame, text="Add New Restaurant",
                                    font=ctk.CTkFont(family=FONT_FAMILY, size=BUTTON_FONT_SIZE),
@@ -44,11 +44,12 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
                                    hover_color=ADMIN_BUTTON_HOVER_COLOR,
                                    text_color=ADMIN_BUTTON_TEXT_COLOR,
                                    command=self._open_add_restaurant_screen,
-                                   corner_radius=8)
-        add_button.pack(side="right", padx=(0,0), pady=5)
+                                   corner_radius=8,
+                                   height=45)
+        add_button.pack(side="right", padx=(0,0), pady=8)
 
         self.table_frame = ctk.CTkFrame(self, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
-        self.table_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=(0, 20))
+        self.table_frame.grid(row=2, column=0, sticky="nsew", padx=25, pady=(0, 25))
         self.table_frame.grid_columnconfigure(0, weight=1)
         self.table_frame.grid_rowconfigure(0, weight=1)
 
@@ -97,7 +98,7 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
                 "Update / View"
             ])
         
-        header_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE+1, weight="bold")
+        header_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE+2, weight="bold")
         cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE)
 
         self.table = CTkTable(master=self.table_frame, 
@@ -108,13 +109,13 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
                               hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
                               colors=[ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR],
                               corner_radius=8,
-                              border_width=1,
-                              border_color=ADMIN_TABLE_BORDER_COLOR,
+                              border_width=2,
+                              border_color="#ff6b35",
                               command=self._on_cell_click,
                               wraplength=180,
                              )
 
-        self.table.pack(expand=True, fill="both", padx=10, pady=10)
+        self.table.pack(expand=True, fill="both", padx=20, pady=15)
         logger.info("Restaurants table created and displayed.")
 
     def _on_cell_click(self, event_data):

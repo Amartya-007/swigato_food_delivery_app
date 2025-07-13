@@ -27,10 +27,10 @@ class AdminReviewsScreen(ctk.CTkFrame):
         title_label = ctk.CTkLabel(self, text="Global Reviews Moderation",
                                    font=ctk.CTkFont(family=FONT_FAMILY, size=HEADING_FONT_SIZE, weight="bold"),
                                    text_color=ADMIN_TEXT_COLOR)
-        title_label.grid(row=0, column=0, padx=20, pady=(10, 10), sticky="nw")
+        title_label.grid(row=0, column=0, padx=25, pady=(20, 15), sticky="nw")
 
         self.table_frame = ctk.CTkFrame(self, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
-        self.table_frame.grid(row=1, column=0, padx=20, pady=(0,20), sticky="nsew")
+        self.table_frame.grid(row=1, column=0, padx=25, pady=(0,25), sticky="nsew")
         self.table_frame.grid_columnconfigure(0, weight=1)
         self.table_frame.grid_rowconfigure(0, weight=1)
 
@@ -63,11 +63,11 @@ class AdminReviewsScreen(ctk.CTkFrame):
         if len(table_data) == 1:
             ctk.CTkLabel(self.table_frame, text="No reviews found in the system.",
                          font=ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE),
-                         text_color=ADMIN_TEXT_COLOR).pack(expand=True, anchor="center", padx=20, pady=20)
+                         text_color=ADMIN_TEXT_COLOR).pack(expand=True, anchor="center", padx=25, pady=25)
             return
 
         cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE - 1)
-        header_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE + 1, weight="bold")
+        header_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE + 2, weight="bold")
         self.reviews_table = CTkTable(
             master=self.table_frame,
             values=table_data,
@@ -77,12 +77,12 @@ class AdminReviewsScreen(ctk.CTkFrame):
             hover_color=ADMIN_PRIMARY_ACCENT_COLOR,
             colors=[ADMIN_TABLE_ROW_LIGHT_COLOR, ADMIN_TABLE_ROW_DARK_COLOR],
             corner_radius=8,
-            border_width=1,
-            border_color=ADMIN_TABLE_BORDER_COLOR,
+            border_width=2,
+            border_color="#ff6b35",
             command=self._on_cell_click,
             wraplength=180
         )
-        self.reviews_table.pack(expand=True, fill="both", padx=10, pady=10)
+        self.reviews_table.pack(expand=True, fill="both", padx=20, pady=15)
         self.actions_column_index = 6
 
     def _on_cell_click(self, event_data):

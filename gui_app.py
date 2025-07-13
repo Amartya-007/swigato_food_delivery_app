@@ -7,12 +7,12 @@ from tkinter import messagebox
 from gui_Light import BACKGROUND_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, SUCCESS_COLOR, DISABLED_BUTTON_COLOR
 
 # Import screen components
-from gui_components.login_screen import LoginScreen
-from gui_components.signup_screen import SignupScreen
+from Authentication.login_screen import LoginScreen
+from Authentication.signup_screen import SignupScreen
 from gui_components.main_app_screen import MainAppScreen
-from gui_components.menu_screen import MenuScreen
-from gui_components.cart_screen import CartScreen
-from gui_components.admin_dashboard import AdminDashboard  # Import AdminDashboard
+from restaurants.menu_screen import MenuScreen
+from cart.cart_screen import CartScreen
+from admin.modern_admin_dashboard import ModernAdminDashboard  # Import Modern AdminDashboard
 from cart.models import Cart
 from users.auth import User
 from users.models import User  # Ensure User is imported
@@ -122,14 +122,14 @@ class App(ctk.CTk):
         return self.cart_screen_instance
 
     def _get_or_create_admin_screen_for_switch_factory(self, user):
-        # This method now returns an instance of AdminDashboard
+        # This method now returns an instance of ModernAdminDashboard
         if not hasattr(self, 'admin_dashboard_instance') or \
            not self.admin_dashboard_instance or \
            not self.admin_dashboard_instance.winfo_exists():
-            log("INFO: Creating new AdminDashboard instance.")
-            self.admin_dashboard_instance = AdminDashboard(self, self.app_callbacks, user)
+            log("INFO: Creating new ModernAdminDashboard instance.")
+            self.admin_dashboard_instance = ModernAdminDashboard(self, self.app_callbacks, user)
         else:
-            log("INFO: Returning existing AdminDashboard instance.")
+            log("INFO: Returning existing ModernAdminDashboard instance.")
             # Ensure the correct user context if it could change (though typically admin user is fixed per session)
             self.admin_dashboard_instance.loggedInUser = user 
         return self.admin_dashboard_instance
@@ -144,13 +144,13 @@ class App(ctk.CTk):
         self.current_screen_frame.pack(fill="both", expand=True)
         self._set_window_properties(title, width, height)
         
-        # If the current screen is AdminDashboard, and it has refresh_data, call it.
-        if isinstance(self.current_screen_frame, AdminDashboard):
+        # If the current screen is ModernAdminDashboard, and it has refresh_data, call it.
+        if isinstance(self.current_screen_frame, ModernAdminDashboard):
             if hasattr(self.current_screen_frame, 'refresh_data') and callable(getattr(self.current_screen_frame, 'refresh_data')):
-                log("INFO: AdminDashboard is packed and current. Calling refresh_data().")
+                log("INFO: ModernAdminDashboard is packed and current. Calling refresh_data().")
                 self.current_screen_frame.refresh_data()  # type: ignore[attr-defined]
             else:
-                log("WARNING: AdminDashboard instance does not have a callable refresh_data method.")
+                log("WARNING: ModernAdminDashboard instance does not have a callable refresh_data method.")
 
     def _post_login_navigation(self, user: User):
         log(f"INFO: _post_login_navigation called for user: {user.username if user else 'None'}. Admin status: {user.is_admin if user else 'N/A'}")
