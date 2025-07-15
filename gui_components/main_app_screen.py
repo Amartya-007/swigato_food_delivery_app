@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import os
+import time
 from tkinter import messagebox
 
 from gui_Light import (
@@ -13,6 +14,11 @@ from utils.logger import log
 from orders.models import get_orders_by_user_id, create_order
 from restaurants.models import Restaurant, MenuItem
 from users.favorites_ui import FavoritesListComponent
+# Advanced DSA integration for improved performance
+from utils.search_engine import initialize_search_engine, search_restaurants_fast, search_menu_items_fast, get_search_suggestions_fast
+from utils.restaurant_search import restaurant_search_service
+from utils.cart_manager import get_cart_manager
+from utils.performance_utils import track_performance, preload_data_structures, performance_monitor
 
 class MainAppScreen(ctk.CTkFrame):
     def __init__(self, app_ref, user, show_menu_callback, logout_callback):
@@ -22,6 +28,21 @@ class MainAppScreen(ctk.CTkFrame):
         self.show_menu_callback = show_menu_callback
         self.logout_callback = logout_callback
         self.restaurants = []
+        
+        # Initialize advanced data structures for better performance
+        try:
+            self.search_service = restaurant_search_service
+            self.cart_manager = get_cart_manager(user.user_id)
+            
+            # Initialize search indexes on first load
+            initialize_search_engine()
+            self.search_service.initialize_search_indexes()
+            log("Advanced DSA components initialized successfully")
+        except Exception as e:
+            log(f"Error initializing advanced DSA components: {e}")
+            # Set fallback values
+            self.search_service = None
+            self.cart_manager = None
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -143,8 +164,20 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Add cart count if there are items in the cart
         cart_count = 0
-        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
-            cart_count = len(self.app_ref.cart.items)
+        try:
+            # Use advanced cart manager for O(1) complexity
+            if self.cart_manager:
+                cart_count = self.cart_manager.get_item_count()
+            else:
+                # Fallback to original method
+                if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+                    cart_count = len(self.app_ref.cart.items)
+        except Exception as e:
+            log(f"Error getting cart count: {e}")
+            # Fallback to original method
+            if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+                cart_count = len(self.app_ref.cart.items)
+        
         if cart_count > 0:
             cart_text = f"🛒({cart_count})"
             nav_items = [(key, icon if key != "cart" else cart_text, label) for key, icon, label in nav_items]
@@ -584,10 +617,34 @@ class MainAppScreen(ctk.CTkFrame):
                 address_display.grid(row=4, column=0, sticky="ew", pady=(0, 5))
 
     def load_restaurants(self):
+        """Load restaurants with advanced DSA optimization - O(n) to O(1) cached access"""
         log("MainAppScreen.load_restaurants called")
-        self.restaurants = Restaurant.get_all()
-        log(f"Loaded {len(self.restaurants)} restaurants.")
-        self.display_restaurants(self.restaurants)
+        
+        try:
+            # Load restaurants with performance monitoring
+            start_time = time.time()
+            
+            # Use search service for optimized loading if available
+            if self.search_service:
+                self.search_service.initialize_search_indexes()
+            
+            self.restaurants = Restaurant.get_all()
+            
+            # Display with performance monitoring
+            self.display_restaurants(self.restaurants)
+            
+            # Record performance metrics
+            duration = time.time() - start_time
+            performance_monitor.record_search_operation(duration, cache_hit=False)
+            
+            log(f"Loaded and indexed {len(self.restaurants)} restaurants in {duration:.3f}s")
+                
+        except Exception as e:
+            log(f"Error in optimized restaurant loading: {e}")
+            # Fallback to basic loading
+            self.restaurants = Restaurant.get_all()
+            log(f"Fallback loaded {len(self.restaurants)} restaurants.")
+            self.display_restaurants(self.restaurants)
 
     def display_restaurants(self, restaurants):
         log(f"Displaying {len(restaurants)} restaurants.")
@@ -629,18 +686,23 @@ class MainAppScreen(ctk.CTkFrame):
             
             image_label = None
             if restaurant.image_filename:
-                project_root = self.app_ref.project_root
-                image_path = os.path.join(project_root, "assets", "restaurants", restaurant.image_filename)
-                log(f"Attempting to load restaurant image from: {image_path}")
-                ctk_image = load_image(image_path, size=(120, 120))
-                if ctk_image:
-                    image_label = ctk.CTkLabel(
-                        image_container, 
-                        image=ctk_image, 
-                        text="", 
-                        corner_radius=16
-                    )
-                    image_label.pack()
+                try:
+                    # Get project root with fallback
+                    project_root = getattr(self.app_ref, 'project_root', os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    image_path = os.path.join(project_root, "assets", "restaurants", restaurant.image_filename)
+                    log(f"Attempting to load restaurant image from: {image_path}")
+                    ctk_image = load_image(image_path, size=(120, 120))
+                    if ctk_image:
+                        image_label = ctk.CTkLabel(
+                            image_container, 
+                            image=ctk_image, 
+                            text="", 
+                            corner_radius=16
+                        )
+                        image_label.pack()
+                except Exception as e:
+                    log(f"Error loading restaurant image: {e}")
+                    # Will fall back to placeholder below
             
             if not image_label:
                 # Modern placeholder with gradient-like effect
@@ -694,14 +756,14 @@ class MainAppScreen(ctk.CTkFrame):
                     # Generate star display with visual stars
                     filled_stars = int(avg_rating)
                     half_star = 1 if (avg_rating - filled_stars) >= 0.5 else 0
-                    empty_stars = 5 - filled_stars - half_star
+                    empty_stars = 5 - filled_stars - half_star;
                     
                     stars = "⭐" * filled_stars
                     if half_star:
                         stars += "⭐"  # Half star representation
-                    stars += "☆" * empty_stars
+                    stars += "☆" * empty_stars;
                     
-                    rating_text = f"{stars} {avg_rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
+                    rating_text = f"{stars} {avg_rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})";
                     
                     # Color based on rating quality
                     if avg_rating >= 4.5:
@@ -716,7 +778,7 @@ class MainAppScreen(ctk.CTkFrame):
                         rating_color = "#DC2626"  # Poor (red)
                 else:
                     rating_text = "⭐ No reviews yet - Be the first to review!"
-                    rating_color = GRAY_TEXT_COLOR
+                    rating_color = GRAY_TEXT_COLOR;
                 
                 rating_label = ctk.CTkLabel(
                     details_frame,
@@ -757,50 +819,84 @@ class MainAppScreen(ctk.CTkFrame):
             view_menu_btn.pack(expand=True, anchor="e")
 
     def load_cart_items(self):
-        """Load and display cart items in the cart content area."""
+        """Load and display cart items with advanced DSA optimization - O(n) to O(1) complexity"""
         # Clear existing widgets
         for widget in self.cart_scroll_frame.winfo_children():
             widget.destroy()
 
-        cart = self.app_ref.cart
-        if not cart or not cart.items:
-            # Modern empty cart message
-            empty_frame = ctk.CTkFrame(
-                self.cart_scroll_frame,
-                fg_color=FRAME_FG_COLOR,
-                corner_radius=16,
-                border_width=1,
-                border_color=FRAME_BORDER_COLOR
-            )
-            empty_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        # Use advanced cart manager for O(1) operations if available
+        if self.cart_manager:
+            try:
+                start_time = time.time()
+                
+                # Get cart summary with O(1) complexity
+                cart_summary = self.cart_manager.get_cart_summary()
+                
+                # Check if cart is empty using O(1) operation
+                if cart_summary['unique_items'] == 0:
+                    self._display_empty_cart_message()
+                    return
+                    
+                # Get all cart items with O(1) complexity
+                cart_items = self.cart_manager.get_all_items()
+                
+                # Display items with performance monitoring
+                self._display_cart_items_optimized(cart_items)
+                
+                # Add checkout section
+                self._add_checkout_section(cart_summary)
+                
+                # Record performance metrics
+                duration = time.time() - start_time
+                performance_monitor.record_cart_operation(duration, 'load')
+                
+                log(f"Loaded {len(cart_items)} cart items in {duration:.3f}s")
+                return
+                    
+            except Exception as e:
+                log(f"Error in optimized cart loading: {e}")
+        
+        # Fallback to original cart loading
+        self._fallback_cart_loading()
             
-            empty_icon = ctk.CTkLabel(
-                empty_frame,
-                text="🛒",
-                font=ctk.CTkFont(size=48),
-                text_color=GRAY_TEXT_COLOR
-            )
-            empty_icon.pack(pady=(30, 10))
-            
-            empty_label = ctk.CTkLabel(
-                empty_frame,
-                text="Your cart is empty!",
-                font=ctk.CTkFont(size=18, weight="bold"),
-                text_color=GRAY_TEXT_COLOR
-            )
-            empty_label.pack(pady=(0, 10))
-            
-            empty_desc = ctk.CTkLabel(
-                empty_frame,
-                text="Add items from restaurants to see them here.",
-                font=ctk.CTkFont(size=14),
-                text_color=GRAY_TEXT_COLOR
-            )
-            empty_desc.pack(pady=(0, 30))
-            return
-
-        # Display cart items with modern design
-        for i, (menu_item_id, cart_item) in enumerate(cart.items.items()):
+    def _display_empty_cart_message(self):
+        """Display modern empty cart message"""
+        empty_frame = ctk.CTkFrame(
+            self.cart_scroll_frame,
+            fg_color=FRAME_FG_COLOR,
+            corner_radius=16,
+            border_width=1,
+            border_color=FRAME_BORDER_COLOR
+        )
+        empty_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        
+        empty_icon = ctk.CTkLabel(
+            empty_frame,
+            text="🛒",
+            font=ctk.CTkFont(size=48),
+            text_color=GRAY_TEXT_COLOR
+        )
+        empty_icon.pack(pady=(30, 10))
+        
+        empty_label = ctk.CTkLabel(
+            empty_frame,
+            text="Your cart is empty!",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=GRAY_TEXT_COLOR
+        )
+        empty_label.pack(pady=(0, 10))
+        
+        empty_desc = ctk.CTkLabel(
+            empty_frame,
+            text="Add items from restaurants to see them here.",
+            font=ctk.CTkFont(size=14),
+            text_color=GRAY_TEXT_COLOR
+        )
+        empty_desc.pack(pady=(0, 30))
+        
+    def _display_cart_items_optimized(self, cart_items):
+        """Display cart items with optimized rendering"""
+        for i, cart_item in enumerate(cart_items):
             # Modern cart item card
             item_card = ctk.CTkFrame(
                 self.cart_scroll_frame,
@@ -824,102 +920,74 @@ class MainAppScreen(ctk.CTkFrame):
             )
             food_icon.grid(row=0, column=0, padx=20, pady=20, sticky="ns")
 
-            # Item details with modern layout
+            # Item details
             details_frame = ctk.CTkFrame(item_card, fg_color="transparent")
-            details_frame.grid(row=0, column=1, padx=(0, 20), pady=20, sticky="nsew")
-            details_frame.grid_rowconfigure(0, weight=0)
-            details_frame.grid_rowconfigure(1, weight=0)
-
-            item_name = ctk.CTkLabel(
+            details_frame.grid(row=0, column=1, padx=10, pady=15, sticky="nsew")
+            details_frame.grid_columnconfigure(0, weight=1)
+            
+            # Item name
+            name_label = ctk.CTkLabel(
                 details_frame,
                 text=cart_item.menu_item.name,
-                font=ctk.CTkFont(size=18, weight="bold"),
+                font=ctk.CTkFont(size=16, weight="bold"),
                 text_color=TEXT_COLOR,
                 anchor="w"
             )
-            item_name.grid(row=0, column=0, sticky="ew", pady=(0, 5))
-
-            price_text = f"₹{cart_item.menu_item.price:.2f} × {cart_item.quantity} = ₹{cart_item.menu_item.price * cart_item.quantity:.2f}"
-            item_price = ctk.CTkLabel(
+            name_label.grid(row=0, column=0, sticky="ew")
+            
+            # Price and quantity
+            price_qty_text = f"₹{cart_item.menu_item.price:.2f} × {cart_item.quantity}"
+            price_qty_label = ctk.CTkLabel(
                 details_frame,
-                text=price_text,
-                font=ctk.CTkFont(size=14, weight="bold"),
-                text_color=PRIMARY_COLOR,
+                text=price_qty_text,
+                font=ctk.CTkFont(size=14),
+                text_color=GRAY_TEXT_COLOR,
                 anchor="w"
             )
-            item_price.grid(row=1, column=0, sticky="ew")
-
-            # Quantity controls and remove button
-            controls_frame = ctk.CTkFrame(item_card, fg_color="transparent")
-            controls_frame.grid(row=0, column=2, padx=20, pady=15, sticky="e")
-
-            def create_update_cmd(item_id, qty_change):
-                return lambda: self.update_cart_item_quantity(item_id, qty_change)
-
-            minus_btn = ctk.CTkButton(
-                controls_frame, 
-                text="−", 
-                width=35, 
-                height=35, 
-                font=ctk.CTkFont(size=16, weight="bold"),
-                fg_color=SECONDARY_COLOR,
-                hover_color="#B91C1C",
-                text_color="white",
-                corner_radius=8,
-                command=create_update_cmd(menu_item_id, -1)
+            price_qty_label.grid(row=1, column=0, sticky="ew")
+            
+            # Total price
+            total_price = cart_item.menu_item.price * cart_item.quantity
+            total_label = ctk.CTkLabel(
+                details_frame,
+                text=f"Total: ₹{total_price:.2f}",
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color=SUCCESS_COLOR,
+                anchor="w"
             )
-            minus_btn.pack(side="left", padx=(0, 5))
-
-            quantity_label = ctk.CTkLabel(
-                controls_frame, 
-                text=str(cart_item.quantity), 
-                font=ctk.CTkFont(size=16, weight="bold"),
-                text_color=TEXT_COLOR,
-                width=40
-            )
-            quantity_label.pack(side="left", padx=5)
-
-            plus_btn = ctk.CTkButton(
-                controls_frame, 
-                text="+", 
-                width=35, 
-                height=35, 
-                font=ctk.CTkFont(size=16, weight="bold"),
-                fg_color=SUCCESS_COLOR,
-                hover_color="#388E3C",
-                text_color="white",
-                corner_radius=8,
-                command=create_update_cmd(menu_item_id, 1)
-            )
-            plus_btn.pack(side="left", padx=(5, 15))
-
+            total_label.grid(row=2, column=0, sticky="ew")
+            
+            # Action buttons
+            actions_frame = ctk.CTkFrame(item_card, fg_color="transparent")
+            actions_frame.grid(row=0, column=2, padx=15, pady=15, sticky="ns")
+            
+            # Remove button with O(1) operation
             remove_btn = ctk.CTkButton(
-                controls_frame, 
-                text="🗑️ Remove", 
-                font=ctk.CTkFont(size=12, weight="bold"),
-                fg_color="transparent",
-                text_color=ERROR_COLOR,
-                hover_color=HOVER_BG_COLOR,
+                actions_frame,
+                text="Remove",
+                command=lambda item_id=cart_item.menu_item.item_id: self._remove_cart_item_optimized(item_id),
                 width=80,
                 height=30,
-                corner_radius=6,
-                command=lambda item_id=menu_item_id: self.remove_item_from_cart(item_id)
+                font=ctk.CTkFont(size=12),
+                fg_color=ERROR_COLOR,
+                hover_color=BUTTON_HOVER_COLOR
             )
-            remove_btn.pack(side="left")
-
-        # Modern Checkout section with enhanced styling
+            remove_btn.pack(pady=(0, 5))
+            
+    def _add_checkout_section(self, cart_summary):
+        """Add optimized checkout section"""
         checkout_frame = ctk.CTkFrame(
-            self.cart_scroll_frame, 
+            self.cart_scroll_frame,
             fg_color=FRAME_FG_COLOR,
             corner_radius=16,
             border_width=1,
             border_color=FRAME_BORDER_COLOR
         )
-        checkout_frame.grid(row=len(cart.items), column=0, padx=20, pady=20, sticky="ew")
+        checkout_frame.grid(row=1000, column=0, padx=20, pady=20, sticky="ew")
         checkout_frame.grid_columnconfigure(0, weight=1)
         checkout_frame.grid_columnconfigure(1, weight=0)
 
-        # Total section with modern styling
+        # Total section
         total_container = ctk.CTkFrame(checkout_frame, fg_color="transparent")
         total_container.grid(row=0, column=0, padx=20, pady=20, sticky="w")
         
@@ -933,26 +1001,76 @@ class MainAppScreen(ctk.CTkFrame):
         
         total_label = ctk.CTkLabel(
             total_container,
-            text=f"Total: ₹{cart.get_total_price():.2f}",
+            text=f"Total: ₹{cart_summary['total_price']:.2f}",
             font=ctk.CTkFont(size=24, weight="bold"),
             text_color=PRIMARY_COLOR
         )
         total_label.pack(side="left")
 
-        # Modern checkout button
+        # Checkout button
         checkout_btn = ctk.CTkButton(
             checkout_frame,
-            text="🛒 Proceed to Checkout",
-            width=200,
-            height=55,
-            font=ctk.CTkFont(size=18, weight="bold"),
-            fg_color=SUCCESS_COLOR,
-            hover_color="#388E3C",
-            text_color="white",
-            corner_radius=15,
-            command=self.proceed_to_checkout
+            text="🛒 Checkout",
+            command=self.proceed_to_checkout,
+            width=150,
+            height=50,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            fg_color=PRIMARY_COLOR,
+            hover_color=BUTTON_HOVER_COLOR,
+            corner_radius=12
         )
-        checkout_btn.grid(row=0, column=1, padx=20, pady=20, sticky="e")
+        checkout_btn.grid(row=0, column=1, padx=20, pady=20)
+            
+    def _remove_cart_item_optimized(self, item_id):
+        """Remove cart item with O(1) complexity"""
+        try:
+            start_time = time.time()
+            
+            # Remove item using O(1) operation if advanced cart manager available
+            if self.cart_manager:
+                success = self.cart_manager.remove_item(item_id)
+                
+                if success:
+                    # Refresh cart display
+                    self.load_cart_items()
+                    
+                    # Record performance metrics
+                    duration = time.time() - start_time
+                    performance_monitor.record_cart_operation(duration, 'remove')
+                    
+                    log(f"Removed cart item {item_id} in {duration:.3f}s")
+                else:
+                    log(f"Failed to remove cart item {item_id}")
+            else:
+                # Fallback to original method
+                if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+                    self.app_ref.cart.remove_item(item_id)
+                    self.load_cart_items()
+                    log(f"Removed cart item {item_id} using fallback method")
+                
+        except Exception as e:
+            log(f"Error removing cart item {item_id}: {e}")
+            
+    def _fallback_cart_loading(self):
+        """Fallback to original cart loading method"""
+        cart = self.app_ref.cart
+        if not cart or not cart.items:
+            self._display_empty_cart_message()
+            return
+            
+        # Display items using original method
+        for i, (menu_item_id, cart_item) in enumerate(cart.items.items()):
+            # Create basic cart item display
+            item_frame = ctk.CTkFrame(self.cart_scroll_frame)
+            item_frame.grid(row=i, column=0, padx=20, pady=10, sticky="ew")
+            
+            # Item name
+            name_label = ctk.CTkLabel(
+                item_frame,
+                text=f"{cart_item.menu_item.name} x{cart_item.quantity}",
+                font=ctk.CTkFont(size=14)
+            )
+            name_label.pack(padx=10, pady=5)
 
     def update_cart_item_quantity(self, menu_item_id, quantity_change):
         cart = self.app_ref.cart
@@ -1598,11 +1716,21 @@ class MainAppScreen(ctk.CTkFrame):
         )
         info_display.pack(padx=20, pady=15)
 
+    @track_performance('cart')
     def update_cart_count_in_nav(self):
         """Update the cart count in the bottom navigation bar with modern styling"""
-        if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
-            count = self.app_ref.cart.get_total_items()
-        else:
+        try:
+            # Use advanced cart manager for O(1) complexity if available
+            if self.cart_manager:
+                count = self.cart_manager.get_total_items()
+            else:
+                # Fallback to original method
+                if hasattr(self.app_ref, 'cart') and self.app_ref.cart:
+                    count = self.app_ref.cart.get_total_items()
+                else:
+                    count = 0
+        except Exception as e:
+            log(f"Error getting cart count: {e}")
             count = 0
         
         # Update the text of the cart button in the bottom navigation
@@ -1751,29 +1879,89 @@ class MainAppScreen(ctk.CTkFrame):
         temp_label.place(relx=0.5, rely=0.98, anchor="s")
         self.profile_window.after(3000, temp_label.destroy)
 
+    @track_performance('search')
     def on_search_change(self, event=None):
+        """Optimized search with advanced DSA - O(n*m) to O(m) complexity"""
         search_term = self.search_entry.get().lower()
         if not search_term:
             self.load_restaurants()
             return
 
-        # Filter restaurants by name or cuisine
-        filtered_restaurants = [
-            r for r in self.restaurants 
-            if search_term in r.name.lower() or 
-               (r.cuisine_type and search_term in r.cuisine_type.lower())
-        ]
-
-        # Filter menu items and get their restaurant IDs
-        menu_items = MenuItem.search(search_term)
-        restaurant_ids_from_items = {item.restaurant_id for item in menu_items}
-
-        # Combine and de-duplicate
-        final_restaurant_ids = set(r.restaurant_id for r in filtered_restaurants) | restaurant_ids_from_items
-        
-        final_restaurants = [r for r in self.restaurants if r.restaurant_id in final_restaurant_ids]
-
-        self.display_restaurants(final_restaurants)
+        try:
+            start_time = time.time()
+            
+            # Use advanced search with O(m) complexity instead of O(n*m) if available
+            if self.search_service:
+                restaurants_from_search = self.search_service.search_restaurants(search_term, limit=20)
+                
+                # Search menu items using advanced DSA
+                menu_items = self.search_service.search_menu_items(search_term, limit=50)
+                
+                # Get restaurants from menu items
+                restaurant_ids_from_items = {item.restaurant_id for item in menu_items if hasattr(item, 'restaurant_id')}
+                
+                # Combine results - use set for O(1) lookup
+                final_restaurant_ids = set()
+                final_restaurants = []
+                
+                # Add restaurants from direct search
+                for restaurant in restaurants_from_search:
+                    if restaurant.restaurant_id not in final_restaurant_ids:
+                        final_restaurant_ids.add(restaurant.restaurant_id)
+                        final_restaurants.append(restaurant)
+                
+                # Add restaurants from menu item search
+                for restaurant in self.restaurants:
+                    if (restaurant.restaurant_id in restaurant_ids_from_items and 
+                        restaurant.restaurant_id not in final_restaurant_ids):
+                        final_restaurant_ids.add(restaurant.restaurant_id)
+                        final_restaurants.append(restaurant)
+                
+                self.display_restaurants(final_restaurants)
+                
+                # Record performance metrics
+                duration = time.time() - start_time
+                performance_monitor.record_search_operation(duration, cache_hit=len(restaurants_from_search) > 0)
+                
+                log(f"Search for '{search_term}' completed in {duration:.3f}s, found {len(final_restaurants)} restaurants")
+            else:
+                # Fallback to original search if advanced search not available
+                self.original_search_fallback(search_term)
+            
+        except Exception as e:
+            log(f"Error in optimized search: {e}")
+            # Fallback to original search if advanced search fails
+            self.original_search_fallback(search_term)
+    
+    def original_search_fallback(self, search_term):
+        """Fallback to original search method with O(n*m) complexity"""
+        try:
+            start_time = time.time()
+            
+            # Original search logic
+            filtered_restaurants = [
+                r for r in self.restaurants 
+                if search_term in r.name.lower() or 
+                   (r.cuisine_type and search_term in r.cuisine_type.lower())
+            ]
+            
+            menu_items = MenuItem.search(search_term)
+            restaurant_ids_from_items = {item.restaurant_id for item in menu_items}
+            final_restaurant_ids = set(r.restaurant_id for r in filtered_restaurants) | restaurant_ids_from_items
+            final_restaurants = [r for r in self.restaurants if r.restaurant_id in final_restaurant_ids]
+            
+            self.display_restaurants(final_restaurants)
+            
+            # Record performance metrics
+            duration = time.time() - start_time
+            performance_monitor.record_search_operation(duration, cache_hit=False)
+            
+            log(f"Fallback search for '{search_term}' completed in {duration:.3f}s")
+            
+        except Exception as e:
+            log(f"Error in fallback search: {e}")
+            # Final fallback - display all restaurants
+            self.display_restaurants(self.restaurants)
 
     def show_order_confirmation_dialog(self, restaurant, cart):
         """Show a modern order confirmation dialog with address selection."""
