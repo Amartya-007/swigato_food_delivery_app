@@ -423,8 +423,17 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                 
                 target_path = os.path.join(target_dir, img_basename)
                 
-                shutil.copy(self.current_add_item_image_path, target_path)
-                logger.info(f"New menu item image '{img_basename}' copied to '{target_path}'.")
+                # Normalize paths to handle forward/backward slashes on Windows
+                source_path = os.path.normpath(os.path.abspath(self.current_add_item_image_path))
+                target_path_normalized = os.path.normpath(os.path.abspath(target_path))
+                
+                # Only copy if source and target are different files
+                if source_path != target_path_normalized:
+                    shutil.copy(self.current_add_item_image_path, target_path)
+                    logger.info(f"New menu item image '{img_basename}' copied to '{target_path}'.")
+                else:
+                    logger.info(f"Menu item image '{img_basename}' already exists in target location, skipping copy.")
+                
                 final_image_filename = img_basename
             except Exception as e:
                 target_path = os.path.join(MENU_ITEM_IMAGE_ASSETS_DIR, os.path.basename(self.current_add_item_image_path))
@@ -506,7 +515,12 @@ class RestaurantManagementScreen(ctk.CTkToplevel):
                     os.makedirs(target_dir, exist_ok=True)
                     target_path = os.path.join(target_dir, img_basename)
                     
-                    if norm_current_selected_path != os.path.normpath(target_path):
+                    # Normalize paths to handle forward/backward slashes on Windows
+                    source_path = os.path.normpath(os.path.abspath(self.current_edit_item_image_path))
+                    target_path_normalized = os.path.normpath(os.path.abspath(target_path))
+                    
+                    # Only copy if source and target are different files
+                    if source_path != target_path_normalized:
                          shutil.copy(self.current_edit_item_image_path, target_path)
                          logger.info(f"Menu item image '{img_basename}' copied/updated to '{target_path}'.")
                     else:

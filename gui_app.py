@@ -9,13 +9,12 @@ from gui_Light import BACKGROUND_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_
 # Import screen components
 from Authentication.login_screen import LoginScreen
 from Authentication.signup_screen import SignupScreen
-from gui_components.main_app_screen import MainAppScreen
+from gui_components.simple_main_app_screen import SimpleMainAppScreen
 from restaurants.menu_screen import MenuScreen
 from cart.cart_screen import CartScreen
 from admin.modern_admin_dashboard import ModernAdminDashboard  # Import Modern AdminDashboard
 from cart.models import Cart
 from users.auth import User
-from users.models import User  # Ensure User is imported
 from orders.models import create_order
 
 # Import for DB setup
@@ -87,9 +86,10 @@ class App(ctk.CTk):
         y_cordinate = int((screen_height / 2) - (height / 2))
         self.geometry(f"{width}x{height}+{x_cordinate}+{y_cordinate}")
 
-    def _set_window_properties(self, title, width, height):
+    def _set_window_properties(self, title, width, height, resizable=True):
         self.title(title)
         self._center_window(width, height)
+        self.resizable(resizable, resizable)
 
     def _create_login_screen(self):
         # Pass _post_login_navigation as the success callback
@@ -99,7 +99,7 @@ class App(ctk.CTk):
         return SignupScreen(self, self.show_login_screen)
 
     def _create_main_app_screen(self):
-        return MainAppScreen(self, self.current_user, self.show_menu_screen, self.logout)
+        return SimpleMainAppScreen(self, self.current_user, self.show_menu_screen, self.logout)
 
     def _create_menu_screen(self, restaurant):
         # Ensure self.menu_screen_instance is created and stored
@@ -134,7 +134,7 @@ class App(ctk.CTk):
             self.admin_dashboard_instance.loggedInUser = user 
         return self.admin_dashboard_instance
 
-    def _switch_screen(self, screen_factory_method, *factory_args, title, width, height):
+    def _switch_screen(self, screen_factory_method, *factory_args, title, width, height, resizable=True):
         if self.current_screen_frame:
             self.current_screen_frame.destroy()
             self.current_screen_frame = None
@@ -142,7 +142,7 @@ class App(ctk.CTk):
         self.current_screen_frame = screen_factory_method(*factory_args)
         
         self.current_screen_frame.pack(fill="both", expand=True)
-        self._set_window_properties(title, width, height)
+        self._set_window_properties(title, width, height, resizable)
         
         # If the current screen is ModernAdminDashboard, and it has refresh_data, call it.
         if isinstance(self.current_screen_frame, ModernAdminDashboard):
@@ -172,7 +172,7 @@ class App(ctk.CTk):
         self.current_restaurant = None
         self.cart = None
 
-        self._switch_screen(self._create_login_screen, title="Swigato - Login", width=400, height=550)
+        self._switch_screen(self._create_login_screen, title="Swigato - Login", width=400, height=550, resizable=False)
 
         # Bring window to front and focus
         self.lift()
@@ -197,7 +197,7 @@ class App(ctk.CTk):
                 self.current_screen_frame.username_entry.focus_set()
 
     def show_signup_screen(self):
-        self._switch_screen(self._create_signup_screen, title="Swigato - Sign Up", width=400, height=600)
+        self._switch_screen(self._create_signup_screen, title="Swigato - Sign Up", width=400, height=600, resizable=False)
 
     def show_main_app_screen(self, user: User):
         log(f"INFO: show_main_app_screen called for user: {user.username if user else 'None'}")

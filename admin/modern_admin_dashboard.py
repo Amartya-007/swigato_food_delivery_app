@@ -12,6 +12,7 @@ from admin.modern_admin_theme import (
 )
 from admin.admin_users_screen import AdminUsersScreen
 from admin.admin_orders_screen import AdminOrdersScreen
+from admin.admin_all_order_history_screen import AdminAllOrderHistoryScreen
 from admin.admin_restaurants_screen import AdminRestaurantsScreen
 from admin.admin_reviews_screen import AdminReviewsScreen
 from users.models import User
@@ -149,6 +150,7 @@ class ModernAdminDashboard(ctk.CTkFrame):
         nav_items = [
             ("User Management", "User Management", AdminUsersScreen, "users"),
             ("Order Management", "Order Management", AdminOrdersScreen, "orders"),
+            ("All Order History", "All Order History", AdminAllOrderHistoryScreen, "all_orders"),
             ("Restaurant Management", "Restaurant Management", AdminRestaurantsScreen, "restaurants"),
             ("Review Management", "Review Management", AdminReviewsScreen, "reviews")
         ]

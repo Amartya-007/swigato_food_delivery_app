@@ -32,7 +32,7 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
 
         title_label = ctk.CTkLabel(self, text="Restaurant Management",
                                    font=ctk.CTkFont(family=FONT_FAMILY, size=HEADING_FONT_SIZE, weight="bold"),
-                                   text_color=ADMIN_TEXT_COLOR)
+                                   text_color="#FF6B35")  # Swigato orange for visibility
         title_label.grid(row=0, column=0, padx=25, pady=(20, 15), sticky="nw")
 
         controls_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -114,6 +114,10 @@ class AdminRestaurantsScreen(ctk.CTkFrame):
                               command=self._on_cell_click,
                               wraplength=180,
                              )
+
+        # Set header text color to Swigato orange for better visibility
+        if table_data:
+            self.table.edit_row(0, text_color="#FF6B35", font=header_font, fg_color=ADMIN_TABLE_HEADER_BG_COLOR)
 
         self.table.pack(expand=True, fill="both", padx=20, pady=15)
         logger.info("Restaurants table created and displayed.")

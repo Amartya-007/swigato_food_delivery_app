@@ -1,13 +1,12 @@
 import customtkinter as ctk
 import os
 from tkinter import messagebox
-from PIL import Image, ImageTk
 
 from gui_Light import (
     BACKGROUND_COLOR, SUCCESS_COLOR, TEXT_COLOR, PRIMARY_COLOR, 
     BUTTON_HOVER_COLOR, FRAME_BORDER_COLOR, FRAME_FG_COLOR, 
-    SECONDARY_COLOR, GRAY_TEXT_COLOR, ERROR_COLOR, BUTTON_TEXT_COLOR,
-    HOVER_BG_COLOR, LIGHT_ORANGE_BG, set_swigato_icon
+    SECONDARY_COLOR, GRAY_TEXT_COLOR, ERROR_COLOR,
+    HOVER_BG_COLOR, set_swigato_icon
 )
 from utils.image_loader import load_image
 from utils.logger import log
@@ -60,7 +59,7 @@ class MainAppScreen(ctk.CTkFrame):
         if hasattr(self.user, "is_admin") and self.user.is_admin:
             admin_panel_button = ctk.CTkButton(
                 header_frame,
-                text="⚙️ Admin Panel",
+                text="Admin Panel",
                 fg_color=PRIMARY_COLOR,
                 hover_color=BUTTON_HOVER_COLOR,
                 text_color="white",
@@ -137,10 +136,10 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Navigation items with modern icons - reordered with Home first
         nav_items = [
-            ("home", "🏠", "Home"),  # Home moved to leftmost position
-            ("orders", "📋", "Orders"),  # Orders available for all users (including admins)
+            ("home", "🏠", "Home"),
+            ("orders", "📋", "Orders"),
             ("favorites", "⭐", "Favorites"),
-            ("cart", "🛒", "Cart")  # Cart moved to rightmost position
+            ("cart", "🛒", "Cart")
         ]
         
         # Add cart count if there are items in the cart
@@ -153,7 +152,7 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Configure nav container grid
         for i in range(len(nav_items)):
-            nav_container.grid_columnconfigure(i, weight=0)        
+            nav_container.grid_columnconfigure(i, weight=0)
         # Modern button style with enhanced effects
         button_style = {
             "width": 60,
@@ -177,7 +176,7 @@ class MainAppScreen(ctk.CTkFrame):
             "border_width": 0,
             "corner_radius": 15
         }
-          # Create navigation buttons with modern styling and better spacing
+        # Create navigation buttons with modern styling and better spacing
         for i, (key, icon, label) in enumerate(nav_items):
             # Button container for better spacing
             btn_container = ctk.CTkFrame(nav_container, fg_color="transparent")
@@ -315,7 +314,8 @@ class MainAppScreen(ctk.CTkFrame):
             text_color=TEXT_COLOR,
             border_width=1,
             border_color=FRAME_BORDER_COLOR,
-            corner_radius=8,            command=self.show_filter_options
+            corner_radius=8,
+            command=lambda: messagebox.showinfo("Filter", "Filter options coming soon!", parent=self)
         )
         filter_btn.grid(row=0, column=2, padx=(0, 15), pady=10)
         
@@ -394,10 +394,11 @@ class MainAppScreen(ctk.CTkFrame):
             border_width=0
         )
         self.cart_scroll_frame.grid(row=1, column=0, padx=0, pady=0, sticky="nsew")
-        self.cart_scroll_frame.grid_columnconfigure(0, weight=1)# Hide all content frames initially
+        self.cart_scroll_frame.grid_columnconfigure(0, weight=1)
+        
+        # Hide all content frames initially
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
-        self.cart_content_frame.grid_remove()
         self.cart_content_frame.grid_remove()
 
     def show_restaurants_content(self):
@@ -406,7 +407,8 @@ class MainAppScreen(ctk.CTkFrame):
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
         self.cart_content_frame.grid_remove()
-          # Show restaurants container (includes search bar)
+        
+        # Show restaurants container (includes search bar)
         self.restaurant_container.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.load_restaurants()
 
@@ -438,7 +440,8 @@ class MainAppScreen(ctk.CTkFrame):
         self.restaurant_container.grid_remove()
         self.favorites_content_frame.grid_remove()
         self.orders_content_frame.grid_remove()
-          # Show cart
+        
+        # Show cart
         self.cart_content_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         self.load_cart_items()
 
@@ -696,7 +699,7 @@ class MainAppScreen(ctk.CTkFrame):
                     
                     stars = "⭐" * filled_stars
                     if half_star:
-                        stars += "⭐"  # You could use a half-star unicode if available
+                        stars += "⭐"  # Half star representation
                     stars += "☆" * empty_stars
                     
                     rating_text = f"{stars} {avg_rating:.1f} ({review_count} review{'s' if review_count != 1 else ''})"
@@ -1038,13 +1041,16 @@ class MainAppScreen(ctk.CTkFrame):
         header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
         header_frame.grid_columnconfigure(1, weight=1)
         
-        # User avatar (placeholder)
+        # User avatar (placeholder) 
         avatar_label = ctk.CTkLabel(
             header_frame,
-            text="👤",
-            font=ctk.CTkFont(size=40),
+            text="USER",
+            font=ctk.CTkFont(size=16, weight="bold"),
             text_color="white",
-            fg_color="transparent"
+            fg_color="#6366F1",
+            corner_radius=20,
+            width=40,
+            height=40
         )
         avatar_label.grid(row=0, column=0, padx=(20, 15), pady=20)
         
@@ -1062,9 +1068,9 @@ class MainAppScreen(ctk.CTkFrame):
         
         status_label = ctk.CTkLabel(
             user_info_frame,
-            text="🟢 Online",
+            text="● Online",
             font=ctk.CTkFont(size=12),
-            text_color="white"
+            text_color="#10B981"
         )
         status_label.pack(anchor="w", pady=(5, 0))
         
@@ -1081,6 +1087,7 @@ class MainAppScreen(ctk.CTkFrame):
             command=self.profile_window.destroy
         )
         close_btn.grid(row=0, column=2, padx=(0, 20), pady=20, sticky="ne")
+       
         # Modern TabView for profile sections with light theme - larger size for no scrolling
         self.profile_tabview = ctk.CTkTabview(
             main_frame,
@@ -1113,7 +1120,8 @@ class MainAppScreen(ctk.CTkFrame):
         """Setup the profile information tab"""
         profile_tab = self.profile_tabview.tab("Profile")
         profile_tab.grid_columnconfigure(0, weight=1)
-          # Profile content frame - no scrolling needed with larger window
+        
+        # Profile content frame - no scrolling needed with larger window
         content_frame = ctk.CTkFrame(
             profile_tab, 
             fg_color="transparent",
@@ -1125,7 +1133,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Account Information Section
         section_label = ctk.CTkLabel(
             content_frame,
-            text="📋 Account Information",
+            text="Account Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
@@ -1136,7 +1144,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Username:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.username_entry = ctk.CTkEntry(
             content_frame,
@@ -1158,7 +1167,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Email:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.email_entry = ctk.CTkEntry(
             content_frame,
@@ -1182,7 +1192,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Address:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.address_entry = ctk.CTkEntry(
             content_frame,
@@ -1206,7 +1217,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Phone:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=4, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=4, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.phone_entry = ctk.CTkEntry(
             content_frame,
@@ -1228,7 +1240,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Update Profile Button
         update_btn = ctk.CTkButton(
             content_frame,
-            text="💾 Update Profile",
+            text="Update Profile",
             command=self.update_profile_info,
             fg_color=PRIMARY_COLOR,
             hover_color=BUTTON_HOVER_COLOR,
@@ -1243,7 +1255,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Account Statistics Section
         stats_label = ctk.CTkLabel(
             content_frame,
-            text="📊 Account Statistics",
+            text="Account Statistics",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
@@ -1265,8 +1277,8 @@ class MainAppScreen(ctk.CTkFrame):
         # Initialize stat_values dictionary to store references
         self.stat_values = {}
         
-        self.create_stat_card(stats_frame, "🛒", "Total Orders", str(total_orders), 0)
-        self.create_stat_card(stats_frame, "💰", "Total Spent", f"₹{total_spent:.2f}", 1)
+        self.create_stat_card(stats_frame, "", "Total Orders", str(total_orders), 0)
+        self.create_stat_card(stats_frame, "", "Total Spent", f"₹{total_spent:.2f}", 1)
         
         # Store references to the stat values for updating
         self.total_orders_value = self.stat_values.get("Total Orders")
@@ -1274,15 +1286,17 @@ class MainAppScreen(ctk.CTkFrame):
         
         # Favorite Restaurants
         fav_restaurants = len(self.user.get_favorite_restaurants())
-        self.create_stat_card(stats_frame, "⭐", "Favorites", str(fav_restaurants), 2)
+        self.create_stat_card(stats_frame, "", "Favorites", str(fav_restaurants), 2)
 
     def create_stat_card(self, parent, icon, label, value, column):
         """Create a statistics card with light theme"""
         card = ctk.CTkFrame(parent, fg_color="white", corner_radius=8, border_width=1, border_color="#E5E7EB")
         card.grid(row=0, column=column, padx=10, pady=10, sticky="ew")
         
-        icon_label = ctk.CTkLabel(card, text=icon, font=ctk.CTkFont(size=24))
-        icon_label.pack(pady=(10, 5))
+        # Only show icon if not empty
+        if icon and icon.strip():
+            icon_label = ctk.CTkLabel(card, text=icon, font=ctk.CTkFont(size=24))
+            icon_label.pack(pady=(10, 5))
         
         value_label = ctk.CTkLabel(
             card, 
@@ -1290,7 +1304,7 @@ class MainAppScreen(ctk.CTkFrame):
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
-        value_label.pack()
+        value_label.pack(pady=(10 if not icon or not icon.strip() else 0, 5))
         
         # Store reference to value label for updating
         if not hasattr(self, 'stat_values'):
@@ -1309,7 +1323,8 @@ class MainAppScreen(ctk.CTkFrame):
         """Setup the security/password tab"""
         security_tab = self.profile_tabview.tab("Security")
         security_tab.grid_columnconfigure(0, weight=1)
-          # Security content frame - no scrolling needed with larger window
+        
+        # Security content frame - no scrolling needed with larger window
         content_frame = ctk.CTkFrame(
             security_tab, 
             fg_color="transparent",
@@ -1321,7 +1336,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Change Password Section
         section_label = ctk.CTkLabel(
             content_frame,
-            text="🔐 Change Password",
+            text="Change Password",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
@@ -1332,7 +1347,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Current Password:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.current_pw_entry = ctk.CTkEntry(
             content_frame,
@@ -1354,7 +1370,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="New Password:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.new_pw_entry = ctk.CTkEntry(
             content_frame,
@@ -1376,7 +1393,8 @@ class MainAppScreen(ctk.CTkFrame):
             content_frame,
             text="Confirm Password:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=TEXT_COLOR        ).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
+            text_color=TEXT_COLOR
+        ).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.confirm_pw_entry = ctk.CTkEntry(
             content_frame,
@@ -1420,7 +1438,7 @@ class MainAppScreen(ctk.CTkFrame):
         # Security Tips Section
         tips_label = ctk.CTkLabel(
             content_frame,
-            text="💡 Security Tips",
+            text="Security Tips",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )        
@@ -1450,7 +1468,8 @@ class MainAppScreen(ctk.CTkFrame):
         """Setup the settings tab"""
         settings_tab = self.profile_tabview.tab("Settings")
         settings_tab.grid_columnconfigure(0, weight=1)
-          # Settings content frame - no scrolling needed with larger window
+        
+        # Settings content frame - no scrolling needed with larger window
         content_frame = ctk.CTkFrame(
             settings_tab, 
             fg_color="transparent",
@@ -1556,7 +1575,7 @@ class MainAppScreen(ctk.CTkFrame):
         # App Information Section
         info_label = ctk.CTkLabel(
             content_frame,
-            text="ℹ️ App Information",
+            text="App Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=PRIMARY_COLOR
         )
@@ -1756,10 +1775,6 @@ class MainAppScreen(ctk.CTkFrame):
         final_restaurants = [r for r in self.restaurants if r.restaurant_id in final_restaurant_ids]
 
         self.display_restaurants(final_restaurants)
-
-    def show_filter_options(self):
-        # This is a placeholder for a more advanced filter UI
-        messagebox.showinfo("Filter", "Filter options coming soon!", parent=self)
 
     def show_order_confirmation_dialog(self, restaurant, cart):
         """Show a modern order confirmation dialog with address selection."""

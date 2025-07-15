@@ -46,7 +46,7 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
             self, 
             text="User Management", 
             font=ctk.CTkFont(family=MODERN_ADMIN_FONT_FAMILY, size=MODERN_ADMIN_FONT_SIZES["title"], weight="bold"), 
-            text_color=MODERN_ADMIN_TEXT
+            text_color="#FF6B35"  # Swigato orange for visibility
         )
         title_label.grid(row=0, column=0, padx=30, pady=(25, 15), sticky="nw")
 
@@ -724,7 +724,7 @@ class AdminUsersScreen(ctk.CTkFrame): # Renamed class
         self.user_table.pack(expand=True, fill="both", padx=MODERN_ADMIN_SPACING["xlarge"], pady=MODERN_ADMIN_SPACING["xlarge"])
 
         if table_values: 
-            self.user_table.edit_row(0, text_color=MODERN_ADMIN_TABLE["header_text"], font=header_font, fg_color=MODERN_ADMIN_TABLE["header_bg"])
+            self.user_table.edit_row(0, text_color="#FF6B35", font=header_font, fg_color=MODERN_ADMIN_TABLE["header_bg"])
 
         for i in range(1, len(table_values)): 
             current_bg_color = MODERN_ADMIN_TABLE["row_light"] if i % 2 != 0 else MODERN_ADMIN_TABLE["row_dark"]

@@ -26,7 +26,7 @@ class AdminOrdersScreen(ctk.CTkFrame):
 
         title_label = ctk.CTkLabel(self, text="Orders Management",
                                    font=ctk.CTkFont(family=FONT_FAMILY, size=HEADING_FONT_SIZE, weight="bold"),
-                                   text_color=ADMIN_TEXT_COLOR)
+                                   text_color="#FF6B35")  # Swigato orange for visibility
         title_label.grid(row=0, column=0, padx=25, pady=(20, 15), sticky="nw")
 
         self.table_frame = ctk.CTkFrame(self, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
@@ -102,6 +102,7 @@ class AdminOrdersScreen(ctk.CTkFrame):
             return
 
         cell_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE - 1)
+        header_font = ctk.CTkFont(family=FONT_FAMILY, size=BODY_FONT_SIZE+1, weight="bold")
         # Use a scrollable frame for order history (not for active orders, which are usually fewer)
         if not active_only:
             scroll_frame = ctk.CTkScrollableFrame(self.table_frame, fg_color=ADMIN_FRAME_FG_COLOR, corner_radius=10)
@@ -123,6 +124,11 @@ class AdminOrdersScreen(ctk.CTkFrame):
             wraplength=180,
             command=self._on_cell_click if active_only else None
         )
+        
+        # Set header text color to Swigato orange for better visibility
+        if table_data:
+            self.orders_table.edit_row(0, text_color="#FF6B35", font=header_font, fg_color=ADMIN_TABLE_HEADER_BG_COLOR)
+        
         self.orders_table.pack(expand=True, fill="both", padx=20, pady=15)
         if active_only:
             self.actions_column_index = 8
