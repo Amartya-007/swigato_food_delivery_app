@@ -1,6 +1,10 @@
 import customtkinter as ctk
 import os
-from gui_Light import *
+from gui_Light import (
+    BACKGROUND_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, 
+    SUCCESS_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, ERROR_COLOR,
+    FRAME_FG_COLOR, FRAME_BORDER_COLOR
+)
 from restaurants.models import Restaurant
 from utils.image_loader import load_image
 from utils.logger import log

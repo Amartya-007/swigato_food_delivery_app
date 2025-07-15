@@ -1,6 +1,10 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from gui_Light import *
+from gui_Light import (
+    BACKGROUND_COLOR, TEXT_COLOR, PRIMARY_COLOR, BUTTON_HOVER_COLOR, 
+    SUCCESS_COLOR, SECONDARY_COLOR, GRAY_TEXT_COLOR, ERROR_COLOR,
+    FRAME_FG_COLOR, FRAME_BORDER_COLOR, HOVER_BG_COLOR
+)
 from utils.logger import log
 
 

@@ -1,4 +1,4 @@
 # GUI Components Package
-from .main_app_screen import MainAppScreen
+from .simple_main_app_screen import SimpleMainAppScreen
 
-__all__ = ['MainAppScreen']
+__all__ = ['SimpleMainAppScreen']

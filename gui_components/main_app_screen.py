@@ -11,7 +11,6 @@ from gui_Light import (
 from utils.image_loader import load_image
 from utils.logger import log
 from orders.models import get_orders_by_user_id, create_order
-from cart.models import Cart
 from restaurants.models import Restaurant, MenuItem
 from users.favorites_ui import FavoritesListComponent
 
